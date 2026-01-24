@@ -233,7 +233,7 @@ def init_db_on_startup():
     """Initialize database and create tables on app startup"""
     with app.app_context():
         try:
-            # Create all tables
+            # Create all tables (if they don't exist)
             db.create_all()
             logger.info("✓ Database tables created/verified")
             
@@ -278,9 +278,14 @@ def init_db_on_startup():
                 db.session.commit()
                 logger.info(f"✓ Seeded {len(courses)} courses")
         except Exception as e:
-            logger.error(f"Error initializing database: {str(e)}")
-            print(f"✗ Database init error: {str(e)}", file=sys.stderr, flush=True)
-            traceback.print_exc(file=sys.stderr)
+            # Ignore "table already exists" errors - happens when multiple workers initialize
+            if "already exists" in str(e):
+                logger.info(f"✓ Database tables already exist (expected in multi-worker setup)")
+                print(f"✓ Database tables already exist (expected in multi-worker setup)", file=sys.stdout, flush=True)
+            else:
+                logger.error(f"Error initializing database: {str(e)}")
+                print(f"✗ Database init error: {str(e)}", file=sys.stderr, flush=True)
+                traceback.print_exc(file=sys.stderr)
 
 
 # Initialize database on startup
