@@ -36,12 +36,15 @@ from config import get_config
 app.config.from_object(get_config())
 
 # Add Whitenoise for serving static files in production
-from whitenoise import WhiteNoise
-app.wsgi_app = WhiteNoise(app.wsgi_app, root='static')
+try:
+    from whitenoise import WhiteNoise
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root='static')
+except Exception as e:
+    logger.warning(f"WhiteNoise initialization failed: {e}")
 
-# Security: Enable HTTPS only in production
-if not app.debug:
-    Talisman(app, force_https=True, strict_transport_security=True)
+# Security: Enable HTTPS only in production (disabled for Railway)
+# if not app.debug:
+#     Talisman(app, force_https=True, strict_transport_security=True)
 
 # Email Configuration
 SMTP_SERVER = 'smtp.gmail.com'
