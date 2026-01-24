@@ -80,7 +80,7 @@ class ProductionConfig(Config):
     @staticmethod
     def validate_config():
         """Validate that all required production variables are set"""
-        required_vars = ['SECRET_KEY', 'SENDER_EMAIL', 'SENDER_PASSWORD']
+        required_vars = ['SECRET_KEY', 'DATABASE_URL']
         missing = [var for var in required_vars if not os.getenv(var)]
         
         if missing:
