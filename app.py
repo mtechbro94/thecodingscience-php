@@ -546,12 +546,16 @@ def inject_config():
 
 # ==================== PUBLIC ROUTES ====================
 
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint for deployment verification"""
+    return jsonify({'status': 'ok', 'service': 'TheCodingScience'}), 200
+
 @app.route('/')
 def home():
     """Homepage"""
     featured_courses = Course.query.limit(4).all()
     return render_template('index.html', courses=featured_courses)
-
 
 @app.route('/courses')
 def courses():
