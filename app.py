@@ -234,6 +234,7 @@ def init_db_on_startup():
     with app.app_context():
         try:
             # Create all tables (if they don't exist)
+            # SQLAlchemy create_all() is supposed to be idempotent, but we catch any errors
             db.create_all()
             logger.info("✓ Database tables created/verified")
             
@@ -278,8 +279,9 @@ def init_db_on_startup():
                 db.session.commit()
                 logger.info(f"✓ Seeded {len(courses)} courses")
         except Exception as e:
+            error_str = str(e).lower()
             # Ignore "table already exists" errors - happens when multiple workers initialize
-            if "already exists" in str(e):
+            if "already exists" in error_str or "table" in error_str and "exists" in error_str:
                 logger.info(f"✓ Database tables already exist (expected in multi-worker setup)")
                 print(f"✓ Database tables already exist (expected in multi-worker setup)", file=sys.stdout, flush=True)
             else:
