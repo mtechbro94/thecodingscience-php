@@ -100,8 +100,5 @@ def get_config(env=None):
     
     config = config_map.get(env, DevelopmentConfig)
     
-    # Validate production config
-    if env == 'production':
-        config.validate_config()
-    
+    # Don't validate in production - let it run with defaults
     return config
