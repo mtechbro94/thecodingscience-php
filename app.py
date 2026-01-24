@@ -31,17 +31,13 @@ load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Add Whitenoise for serving static files in production
-try:
-    from whitenoise import WhiteNoise
-    static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static'))
-    app.wsgi_app = WhiteNoise(app.wsgi_app, root=static_dir, prefix='static/')
-except ImportError:
-    pass  # Whitenoise not installed
-
-# Load configuration
+# Load configuration first
 from config import get_config
 app.config.from_object(get_config())
+
+# Add Whitenoise for serving static files in production
+from whitenoise import WhiteNoise
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static')
 
 # Security: Enable HTTPS only in production
 if not app.debug:
