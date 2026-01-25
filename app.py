@@ -260,7 +260,7 @@ def init_db_on_startup():
             db.create_all()
             logger.info("✓ Database tables created/verified")
             
-            # Check if courses are incomplete or duplicated
+            # Check if courses are incomplete or have wrong data
             course_count = Course.query.count()
             
             # Define what courses should exist
@@ -273,51 +273,55 @@ def init_db_on_startup():
                 'Data Science and Analytics',
             }
             
-            # Get actual course names in DB
-            actual_courses = {c.name for c in Course.query.all()}
+            # Expected valid image filenames
+            valid_images = {
+                'webdev.jpg',
+                'CS.jpg',
+                'MS.jpg',
+                'AIML.jpg',
+                'PFP.jpg',
+                'DSA.jpg',
+            }
             
-            # Check if all required courses exist and count matches
-            needs_fix = course_count != 6 or actual_courses != required_course_names
+            # Get actual course data from DB
+            actual_courses = Course.query.all()
+            actual_course_names = {c.name for c in actual_courses}
+            actual_images = {c.image for c in actual_courses if c.image}
+            
+            # Determine if database needs fixing
+            # Fix if: wrong count, wrong names, or invalid images
+            needs_fix = (
+                course_count != 6 or 
+                actual_course_names != required_course_names or
+                not actual_images.issubset(valid_images) or
+                any(c.image and (c.image.startswith('/static') or 'office' in c.image.lower() or 'cs-' in c.image.lower()) for c in actual_courses)
+            )
             
             if needs_fix:
-                logger.warning(f"⚠️  Database inconsistent: {course_count} courses found, expected 6 unique courses")
-                logger.warning(f"    Expected: {required_course_names}")
-                logger.warning(f"    Found: {actual_courses}")
+                logger.warning(f"⚠️  Database inconsistent - triggering fix")
+                logger.warning(f"    Course count: {course_count} (expected 6)")
+                logger.warning(f"    Expected names: {required_course_names}")
+                logger.warning(f"    Found names: {actual_course_names}")
+                logger.warning(f"    Found images: {actual_images}")
+                logger.warning(f"    Valid images: {valid_images}")
                 logger.warning(f"    Fixing database...")
                 
                 # Delete all courses and reseed
                 Course.query.delete()
+                CourseReview.query.delete()  # Also delete reviews to keep data consistent
                 db.session.commit()
-                logger.info("✓ Cleared all course data")
+                logger.info("✓ Cleared all course and review data")
                 
                 # Call seed_courses to create all 6 courses
                 seed_courses()
                 logger.info("✓ Database reseeded with all 6 correct courses")
             else:
-                # Ensure courses have proper images
-                course_images = {
-                    'Web Development Foundations': 'webdev.jpg',
-                    'Computer Science Foundations': 'CS.jpg',
-                    'Microsoft Office Automation and Digital Tools': 'MS.jpg',
-                    'AI & Machine Learning Foundations': 'AIML.jpg',
-                    'Programming Foundations with Python': 'PFP.jpg',
-                    'Data Science and Analytics': 'DSA.jpg',
-                }
-                
-                for course_name, image_name in course_images.items():
-                    course = Course.query.filter_by(name=course_name).first()
-                    if course:
-                        if not course.image or course.image.startswith('/static'):
-                            course.image = image_name
-                            db.session.add(course)
-                            logger.info(f"Updated course image for {course_name}")
-                
-                db.session.commit()
+                logger.info(f"✓ Database verified: {course_count} courses with valid images")
             
-            # Verify final state
+            # Final verification
             final_count = Course.query.count()
-            if final_count == 6:
-                logger.info(f"✓ Database verified: {final_count} courses with images")
+            final_images = {c.image for c in Course.query.all() if c.image}
+            logger.info(f"✓ Database init complete: {final_count} courses, images: {final_images}")
             db.session.commit()
         except Exception as e:
             error_str = str(e).lower()
