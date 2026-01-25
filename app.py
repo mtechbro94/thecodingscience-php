@@ -121,6 +121,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
+    reset_token = db.Column(db.String(255), nullable=True)
+    reset_token_time = db.Column(db.Integer, nullable=True)
     
     # Relationships
     enrollments = db.relationship('Enrollment', backref='student', lazy=True, cascade='all, delete-orphan')
@@ -1203,6 +1205,112 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('home'))
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Forgot password route - sends reset email"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        
+        if not email:
+            return render_template('forgot_password.html', error='Please enter your email address')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Generate reset token (using UUID)
+            reset_token = str(uuid.uuid4())
+            # Store token in cache/session with 30 minute expiry
+            import time
+            user.reset_token = reset_token
+            user.reset_token_time = int(time.time())
+            db.session.commit()
+            
+            reset_link = url_for('reset_password', token=reset_token, _external=True)
+            
+            html_body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h2 style="color: #007bff; text-align: center;">Password Reset Request</h2>
+                        <p>Hello,</p>
+                        <p>We received a request to reset your password. Click the link below to proceed:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{reset_link}" style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                                Reset Your Password
+                            </a>
+                        </div>
+                        <p>Or copy and paste this link in your browser:</p>
+                        <p style="word-break: break-all; color: #666;">{reset_link}</p>
+                        <p style="color: #999; font-size: 12px;">This link will expire in 30 minutes.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="color: #666; font-size: 12px;">If you didn't request a password reset, please ignore this email.</p>
+                        <p style="color: #666; font-size: 12px;">Best regards,<br><strong>{app.config.get('SITE_NAME', 'The Coding Science')}</strong></p>
+                    </div>
+                </body>
+            </html>
+            """
+            
+            send_email(email, "Password Reset Request - The Coding Science", html_body)
+            logger.info(f'Password reset email sent to: {email}')
+        
+        # Don't reveal whether email exists or not (security best practice)
+        return render_template('forgot_password.html', message='If an account exists with that email, you will receive a password reset link shortly.')
+    
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset password route"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    # Find user by reset token
+    user = User.query.filter_by(reset_token=token).first()
+    
+    if not user:
+        return render_template('reset_password.html', error='Invalid or expired reset link.')
+    
+    # Check if token expired (30 minutes)
+    import time
+    current_time = int(time.time())
+    token_age = current_time - (user.reset_token_time or 0)
+    
+    if token_age > 1800:  # 30 minutes
+        user.reset_token = None
+        user.reset_token_time = None
+        db.session.commit()
+        return render_template('reset_password.html', error='Reset link has expired. Please request a new one.')
+    
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not password or not confirm_password:
+            return render_template('reset_password.html', error='Please fill in all fields.')
+        
+        if password != confirm_password:
+            return render_template('reset_password.html', error='Passwords do not match.')
+        
+        if len(password) < 6:
+            return render_template('reset_password.html', error='Password must be at least 6 characters.')
+        
+        # Update password
+        user.set_password(password)
+        user.reset_token = None
+        user.reset_token_time = None
+        db.session.commit()
+        
+        logger.info(f'Password reset successfully for: {user.email}')
+        flash('Your password has been reset successfully. Please log in with your new password.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html')
 
 
 # ==================== STUDENT DASHBOARD ROUTES ====================
