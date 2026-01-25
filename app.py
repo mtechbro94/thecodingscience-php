@@ -260,66 +260,45 @@ def init_db_on_startup():
             db.create_all()
             logger.info("✓ Database tables created/verified")
             
-            # Ensure courses have proper images
-            course_images = {
-                'Web Development Foundations': 'webdev.jpg',
-                'Computer Science Foundations': 'CS.jpg',
-                'Microsoft Office Automation and Digital Tools': 'MS.jpg',
-                'AI & Machine Learning Foundations': 'AIML.jpg',
-                'Programming Foundations with Python': 'PFP.jpg',
-                'Data Science and Analytics': 'DS&A.jpg',
-            }
-            
-            for course_name, image_name in course_images.items():
-                course = Course.query.filter_by(name=course_name).first()
-                if course:
-                    if not course.image or course.image.startswith('/static'):
-                        course.image = image_name
-                        db.session.add(course)
-                        logger.info(f"Updated course image for {course_name}")
-            
-            db.session.commit()
-            
-            # Seed initial courses if empty
-            if Course.query.first() is None:
-                logger.info("Seeding initial course data...")
-                courses = [
-                    Course(
-                        name='Web Development Foundations',
-                        description='Learn HTML, CSS, JavaScript, and React',
-                        duration='8 weeks',
-                        level='Beginner',
-                        price=99.99,
-                        image='webdev.jpg'
-                    ),
-                    Course(
-                        name='Computer Science Foundations',
-                        description='Data Structures, Algorithms, and OOP concepts',
-                        duration='10 weeks',
-                        level='Beginner',
-                        price=99.99,
-                        image='CS.jpg'
-                    ),
-                    Course(
-                        name='Programming Foundations with Python',
-                        description='Python basics to advanced concepts',
-                        duration='8 weeks',
-                        level='Beginner',
-                        price=79.99,
-                        image='PFP.jpg'
-                    ),
-                    Course(
-                        name='Microsoft Office Automation',
-                        description='Automate Excel, Word, and Outlook with Python',
-                        duration='6 weeks',
-                        level='Intermediate',
-                        price=69.99,
-                        image='MS.jpg'
-                    ),
-                ]
-                db.session.add_all(courses)
+            # Check if courses are incomplete (less than 6)
+            course_count = Course.query.count()
+            if course_count < 6:
+                logger.warning(f"⚠️  Database incomplete: {course_count} courses found (expected 6). Reseeding...")
+                
+                # Delete all courses and reseed
+                Course.query.delete()
                 db.session.commit()
-                logger.info(f"✓ Seeded {len(courses)} courses")
+                logger.info("Cleared incomplete course data")
+                
+                # Call seed_courses to create all 6 courses
+                seed_courses()
+                logger.info("✓ Database reseeded with all 6 courses")
+            else:
+                # Ensure courses have proper images
+                course_images = {
+                    'Web Development Foundations': 'webdev.jpg',
+                    'Computer Science Foundations': 'CS.jpg',
+                    'Microsoft Office Automation and Digital Tools': 'MS.jpg',
+                    'AI & Machine Learning Foundations': 'AIML.jpg',
+                    'Programming Foundations with Python': 'PFP.jpg',
+                    'Data Science and Analytics': 'DS&A.jpg',
+                }
+                
+                for course_name, image_name in course_images.items():
+                    course = Course.query.filter_by(name=course_name).first()
+                    if course:
+                        if not course.image or course.image.startswith('/static'):
+                            course.image = image_name
+                            db.session.add(course)
+                            logger.info(f"Updated course image for {course_name}")
+                
+                db.session.commit()
+            
+            # Verify final state
+            final_count = Course.query.count()
+            if final_count == 6:
+                logger.info(f"✓ Database verified: {final_count} courses with images")
+            db.session.commit()
         except Exception as e:
             error_str = str(e).lower()
             # Ignore "table already exists" errors - happens when multiple workers initialize
