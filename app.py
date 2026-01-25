@@ -249,6 +249,121 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+# ==================== SEED DATA FUNCTION ====================
+
+def seed_courses(force=False):
+    """Initialize database with course data"""
+    if not force and Course.query.first() is not None:
+        return  # Database already seeded
+    
+    import json
+    
+    courses = [
+        Course(
+            name='Web Development Foundations',
+            duration='3 Months',
+            description='Build a solid base in HTML, CSS, JavaScript, and responsive design to launch your web career.',
+            price=499,
+            level='Foundational',
+            image='webdev.jpg',
+            curriculum=json.dumps([
+                "Module 1: HTML5 & Semantic Web",
+                "Module 2: CSS3 Styling & Flexbox/Grid",
+                "Module 3: JavaScript Basics & DOM Manipulation",
+                "Module 4: Responsive Design with Bootstrap",
+                "Module 5: Git & Version Control",
+                "Module 6: Deployment & Portfolio Building"
+            ])
+        ),
+        Course(
+            name='Computer Science Foundations',
+            duration='3 Months',
+            description='Strengthen core CS skills with programming fundamentals, data structures, and problem-solving.',
+            price=499,
+            level='Foundational',
+            image='CS.jpg',
+            curriculum=json.dumps([
+                "Module 1: Introduction to Computing & Binary",
+                "Module 2: Algorithms & Logic Building",
+                "Module 3: Data Structures (Arrays, Lists, Stacks)",
+                "Module 4: Object-Oriented Programming Concepts",
+                "Module 5: Database Fundamentals (SQL)",
+                "Module 6: Operating Systems & Networking Basics"
+            ])
+        ),
+        Course(
+            name='Microsoft Office Automation and Digital Tools',
+            duration='3 Months',
+            description='Master Excel, Word, PowerPoint, and automation workflows to boost productivity across teams.',
+            price=499,
+            level='Foundational',
+            image='MS.jpg',
+            curriculum=json.dumps([
+                "Module 1: Advanced Excel Formulas & Functions",
+                "Module 2: Data Visualization in Excel",
+                "Module 3: Word Formatting & Mail Merge",
+                "Module 4: PowerPoint Professional Presentations",
+                "Module 5: Outlook & Communication Management",
+                "Module 6: Introduction to Macros & Automation"
+            ])
+        ),
+        Course(
+            name='AI & Machine Learning Foundations',
+            duration='3 Months',
+            description='Explore the fundamentals of AI, machine learning workflows, and hands-on model building.',
+            price=499,
+            level='Foundational',
+            image='AIML.jpg',
+            curriculum=json.dumps([
+                "Module 1: Introduction to AI & Data Science",
+                "Module 2: Python for Data Science (NumPy, Pandas)",
+                "Module 3: Data Visualization (Matplotlib, Seaborn)",
+                "Module 4: Machine Learning Concepts (Supervised/Unsupervised)",
+                "Module 5: Building Simple Models (Scikit-Learn)",
+                "Module 6: Ethics in AI & Future Trends"
+            ])
+        ),
+        Course(
+            name='Programming Foundations with Python',
+            duration='3 Months',
+            description='Master Python programming from basics to intermediate level with real-world projects and problem-solving techniques.',
+            price=499,
+            level='Foundational',
+            image='PFP.jpg',
+            curriculum=json.dumps([
+                "Module 1: Python Syntax & Variables",
+                "Module 2: Control Flow (If/Else, Loops)",
+                "Module 3: Functions & Modules",
+                "Module 4: Data Structures (Lists, Dictionaries)",
+                "Module 5: File Handling & APIs",
+                "Module 6: Final Project: Building a Tool"
+            ])
+        ),
+        Course(
+            name='Data Science and Analytics',
+            duration='3 Months',
+            description='Learn data analysis, visualization, and business intelligence with Python, Pandas, and powerful analytics tools.',
+            price=499,
+            level='Intermediate',
+            image='DSA.jpg',
+            curriculum=json.dumps([
+                "Module 1: Python for Data Analysis",
+                "Module 2: Data Wrangling with Pandas",
+                "Module 3: Exploratory Data Analysis",
+                "Module 4: Statistical Analysis Basics",
+                "Module 5: Data Storytelling & Visualization",
+                "Module 6: Capstone Project"
+            ])
+        ),
+    ]
+    
+    for course in courses:
+        db.session.add(course)
+    
+    db.session.commit()
+    logger.info('Database seeded with courses.')
+
+
 # ==================== DATABASE INITIALIZATION ====================
 
 def init_db_on_startup():
@@ -380,120 +495,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-# ==================== SEED DATA FUNCTION ====================
-
-def seed_courses(force=False):
-    """Initialize database with course data"""
-    if not force and Course.query.first() is not None:
-        return  # Database already seeded
-    
-    import json
-    
-    courses = [
-        Course(
-            name='Web Development Foundations',
-            duration='3 Months',
-            description='Build a solid base in HTML, CSS, JavaScript, and responsive design to launch your web career.',
-            price=499,
-            level='Foundational',
-            image='webdev.jpg',
-            curriculum=json.dumps([
-                "Module 1: HTML5 & Semantic Web",
-                "Module 2: CSS3 Styling & Flexbox/Grid",
-                "Module 3: JavaScript Basics & DOM Manipulation",
-                "Module 4: Responsive Design with Bootstrap",
-                "Module 5: Git & Version Control",
-                "Module 6: Deployment & Portfolio Building"
-            ])
-        ),
-        Course(
-            name='Computer Science Foundations',
-            duration='3 Months',
-            description='Strengthen core CS skills with programming fundamentals, data structures, and problem-solving.',
-            price=499,
-            level='Foundational',
-            image='CS.jpg',
-            curriculum=json.dumps([
-                "Module 1: Introduction to Computing & Binary",
-                "Module 2: Algorithms & Logic Building",
-                "Module 3: Data Structures (Arrays, Lists, Stacks)",
-                "Module 4: Object-Oriented Programming Concepts",
-                "Module 5: Database Fundamentals (SQL)",
-                "Module 6: Operating Systems & Networking Basics"
-            ])
-        ),
-        Course(
-            name='Microsoft Office Automation and Digital Tools',
-            duration='3 Months',
-            description='Master Excel, Word, PowerPoint, and automation workflows to boost productivity across teams.',
-            price=499,
-            level='Foundational',
-            image='MS.jpg',
-            curriculum=json.dumps([
-                "Module 1: Advanced Excel Formulas & Functions",
-                "Module 2: Data Visualization in Excel",
-                "Module 3: Word Formatting & Mail Merge",
-                "Module 4: PowerPoint Professional Presentations",
-                "Module 5: Outlook & Communication Management",
-                "Module 6: Introduction to Macros & Automation"
-            ])
-        ),
-        Course(
-            name='AI & Machine Learning Foundations',
-            duration='3 Months',
-            description='Explore the fundamentals of AI, machine learning workflows, and hands-on model building.',
-            price=499,
-            level='Foundational',
-            image='AIML.jpg',
-            curriculum=json.dumps([
-                "Module 1: Introduction to AI & Data Science",
-                "Module 2: Python for Data Science (NumPy, Pandas)",
-                "Module 3: Data Visualization (Matplotlib, Seaborn)",
-                "Module 4: Machine Learning Concepts (Supervised/Unsupervised)",
-                "Module 5: Building Simple Models (Scikit-Learn)",
-                "Module 6: Ethics in AI & Future Trends"
-            ])
-        ),
-        Course(
-            name='Programming Foundations with Python',
-            duration='3 Months',
-            description='Master Python programming from basics to intermediate level with real-world projects and problem-solving techniques.',
-            price=499,
-            level='Foundational',
-            image='PFP.jpg',
-            curriculum=json.dumps([
-                "Module 1: Python Syntax & Variables",
-                "Module 2: Control Flow (If/Else, Loops)",
-                "Module 3: Functions & Modules",
-                "Module 4: Data Structures (Lists, Dictionaries)",
-                "Module 5: File Handling & APIs",
-                "Module 6: Final Project: Building a Tool"
-            ])
-        ),
-        Course(
-            name='Data Science and Analytics',
-            duration='3 Months',
-            description='Learn data analysis, visualization, and business intelligence with Python, Pandas, and powerful analytics tools.',
-            price=499,
-            level='Intermediate',
-            image='DSA.jpg',
-            curriculum=json.dumps([
-                "Module 1: Python for Data Analysis",
-                "Module 2: Data Wrangling with Pandas",
-                "Module 3: Exploratory Data Analysis",
-                "Module 4: Statistical Analysis Basics",
-                "Module 5: Data Storytelling & Visualization",
-                "Module 6: Capstone Project"
-            ])
-        ),
-    ]
-    
-    for course in courses:
-        db.session.add(course)
-    
-    db.session.commit()
-    logger.info('Database seeded with courses.')
 
 
 # ==================== HELPER FUNCTIONS ====================
