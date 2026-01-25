@@ -140,7 +140,7 @@ SENDER_PASSWORD=your-app-password
 # Social Media
 INSTAGRAM_URL=https://instagram.com/thecodingscience
 YOUTUBE_URL=https://youtube.com/@thecodingscience
-FACEBOOK_URL=https://facebook.com/thecodingscience
+FACEBOOK_URL=https://www.facebook.com/share/184mEoARX8/
 LINKEDIN_URL=https://linkedin.com/company/thecodingscience
 WHATSAPP_GROUP_LINK=https://chat.whatsapp.com/your-link
 
