@@ -618,6 +618,43 @@ def inject_config():
 
 # ==================== PUBLIC ROUTES ====================
 
+@app.route('/fix-course-images')
+@admin_required
+def fix_course_images():
+    """Admin endpoint to fix course images"""
+    try:
+        course_images = {
+            'Web Development Foundations': 'webdev.jpg',
+            'Computer Science Foundations': 'CS.jpg',
+            'Microsoft Office Automation and Digital Tools': 'MS.jpg',
+            'AI & Machine Learning Foundations': 'AIML.jpg',
+            'Programming Foundations with Python': 'PFP.jpg',
+            'Data Science and Analytics': 'DS&A.jpg',
+        }
+        
+        fixed_count = 0
+        for course_name, image_name in course_images.items():
+            course = Course.query.filter_by(name=course_name).first()
+            if course:
+                course.image = image_name
+                db.session.add(course)
+                fixed_count += 1
+                logger.info(f"Fixed image for: {course_name}")
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Fixed {fixed_count} course images',
+            'courses': [(c.name, c.image) for c in Course.query.all()]
+        })
+    except Exception as e:
+        logger.error(f"Error fixing course images: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/health')
 def health_check():
     """Simple health check endpoint for deployment verification"""
