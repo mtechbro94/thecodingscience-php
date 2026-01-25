@@ -260,6 +260,26 @@ def init_db_on_startup():
             db.create_all()
             logger.info("✓ Database tables created/verified")
             
+            # Ensure courses have proper images
+            course_images = {
+                'Web Development Foundations': 'webdev.jpg',
+                'Computer Science Foundations': 'CS.jpg',
+                'Microsoft Office Automation and Digital Tools': 'MS.jpg',
+                'AI & Machine Learning Foundations': 'AIML.jpg',
+                'Programming Foundations with Python': 'PFP.jpg',
+                'Data Science and Analytics': 'DS&A.jpg',
+            }
+            
+            for course_name, image_name in course_images.items():
+                course = Course.query.filter_by(name=course_name).first()
+                if course:
+                    if not course.image or course.image.startswith('/static'):
+                        course.image = image_name
+                        db.session.add(course)
+                        logger.info(f"Updated course image for {course_name}")
+            
+            db.session.commit()
+            
             # Seed initial courses if empty
             if Course.query.first() is None:
                 logger.info("Seeding initial course data...")
@@ -270,7 +290,7 @@ def init_db_on_startup():
                         duration='8 weeks',
                         level='Beginner',
                         price=99.99,
-                        image='/static/images/web-dev.jpg'
+                        image='webdev.jpg'
                     ),
                     Course(
                         name='Computer Science Foundations',
@@ -278,7 +298,7 @@ def init_db_on_startup():
                         duration='10 weeks',
                         level='Beginner',
                         price=99.99,
-                        image='/static/images/cs-fundamentals.jpg'
+                        image='CS.jpg'
                     ),
                     Course(
                         name='Programming Foundations with Python',
@@ -286,7 +306,7 @@ def init_db_on_startup():
                         duration='8 weeks',
                         level='Beginner',
                         price=79.99,
-                        image='/static/images/python-fundamentals.jpg'
+                        image='PFP.jpg'
                     ),
                     Course(
                         name='Microsoft Office Automation',
@@ -294,7 +314,7 @@ def init_db_on_startup():
                         duration='6 weeks',
                         level='Intermediate',
                         price=69.99,
-                        image='/static/images/office-automation.jpg'
+                        image='MS.jpg'
                     ),
                 ]
                 db.session.add_all(courses)
