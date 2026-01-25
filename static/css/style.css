@@ -435,6 +435,16 @@ nav.navbar-custom:hover {
     margin-bottom: 0.25rem;
 }
 
+.course-price {
+    display: inline-block;
+    background-color: var(--success-color, #28a745);
+    color: white;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 .course-meta {
     margin-top: 1rem;
     padding-top: 1rem;
