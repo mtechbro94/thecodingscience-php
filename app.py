@@ -219,6 +219,27 @@ class InternshipApplication(db.Model):
         return f'<InternshipApplication {self.email} -> {self.internship_role}>'
 
 
+class CourseReview(db.Model):
+    """Course Reviews and Ratings"""
+    __tablename__ = 'course_reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
+    review_text = db.Column(db.Text, nullable=True)
+    is_approved = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    course = db.relationship('Course', backref='reviews', lazy=True)
+    user = db.relationship('User', backref='course_reviews', lazy=True)
+    
+    def __repr__(self):
+        return f'<CourseReview {self.user.email} -> {self.course.name} ({self.rating} stars)>'
+
+
 # ==================== FLASK-LOGIN HELPER ====================
 
 @login_manager.user_loader
@@ -792,6 +813,219 @@ def apply_internship(internship_id):
         return jsonify({'status': 'error', 'message': 'An error occurred. Please try again.'}), 500
 
 
+# ==================== COURSE REVIEWS ====================
+
+@app.route('/course/<int:course_id>/review', methods=['POST'])
+@login_required
+def submit_review(course_id):
+    """Submit a course review"""
+    course = Course.query.get_or_404(course_id)
+    
+    try:
+        # Check if user is enrolled in the course
+        is_enrolled = Enrollment.query.filter_by(
+            user_id=current_user.id,
+            course_id=course_id,
+            status='completed'
+        ).first()
+        
+        if not is_enrolled:
+            return jsonify({
+                'status': 'error',
+                'message': 'You must be enrolled in this course to leave a review.'
+            }), 403
+        
+        # Check if user already reviewed this course
+        existing_review = CourseReview.query.filter_by(
+            user_id=current_user.id,
+            course_id=course_id
+        ).first()
+        
+        if existing_review:
+            return jsonify({
+                'status': 'error',
+                'message': 'You have already reviewed this course. You can edit your review.'
+            }), 400
+        
+        # Validate input
+        rating = request.json.get('rating')
+        review_text = request.json.get('review_text', '').strip()
+        
+        if not rating or rating < 1 or rating > 5:
+            return jsonify({
+                'status': 'error',
+                'message': 'Rating must be between 1 and 5 stars.'
+            }), 400
+        
+        if len(review_text) > 1000:
+            return jsonify({
+                'status': 'error',
+                'message': 'Review text is too long (maximum 1000 characters).'
+            }), 400
+        
+        # Create review
+        review = CourseReview(
+            course_id=course_id,
+            user_id=current_user.id,
+            rating=int(rating),
+            review_text=review_text if review_text else None,
+            is_approved=False  # Require moderation
+        )
+        
+        db.session.add(review)
+        db.session.commit()
+        
+        logger.info(f'Course review submitted: {current_user.email} -> {course.name} ({rating} stars)')
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Review submitted successfully! It will appear after moderation.'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error submitting review: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while submitting your review.'
+        }), 500
+
+
+@app.route('/course/<int:course_id>/reviews', methods=['GET'])
+def get_course_reviews(course_id):
+    """Get approved reviews for a course"""
+    course = Course.query.get_or_404(course_id)
+    
+    try:
+        page = request.args.get('page', 1, type=int)
+        reviews = CourseReview.query.filter_by(
+            course_id=course_id,
+            is_approved=True
+        ).order_by(CourseReview.created_at.desc()).paginate(page=page, per_page=5)
+        
+        # Calculate average rating
+        all_reviews = CourseReview.query.filter_by(
+            course_id=course_id,
+            is_approved=True
+        ).all()
+        
+        avg_rating = 0
+        total_reviews = len(all_reviews)
+        if total_reviews > 0:
+            avg_rating = round(sum(r.rating for r in all_reviews) / total_reviews, 1)
+        
+        reviews_data = [{
+            'id': r.id,
+            'user_name': r.user.name,
+            'rating': r.rating,
+            'review_text': r.review_text,
+            'created_at': r.created_at.strftime('%Y-%m-%d')
+        } for r in reviews.items]
+        
+        return jsonify({
+            'status': 'success',
+            'reviews': reviews_data,
+            'average_rating': avg_rating,
+            'total_reviews': total_reviews,
+            'current_page': page,
+            'total_pages': reviews.pages
+        })
+    
+    except Exception as e:
+        logger.error(f'Error fetching reviews: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while fetching reviews.'
+        }), 500
+
+
+@app.route('/review/<int:review_id>/edit', methods=['PUT'])
+@login_required
+def edit_review(review_id):
+    """Edit own review"""
+    review = CourseReview.query.get_or_404(review_id)
+    
+    # Check ownership
+    if review.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({
+            'status': 'error',
+            'message': 'You can only edit your own review.'
+        }), 403
+    
+    try:
+        rating = request.json.get('rating')
+        review_text = request.json.get('review_text', '').strip()
+        
+        if rating and (rating < 1 or rating > 5):
+            return jsonify({
+                'status': 'error',
+                'message': 'Rating must be between 1 and 5 stars.'
+            }), 400
+        
+        if len(review_text) > 1000:
+            return jsonify({
+                'status': 'error',
+                'message': 'Review text is too long (maximum 1000 characters).'
+            }), 400
+        
+        if rating:
+            review.rating = int(rating)
+        if review_text:
+            review.review_text = review_text
+        
+        review.is_approved = False  # Require re-approval after edit
+        db.session.commit()
+        
+        logger.info(f'Review edited: {review_id} by {current_user.email}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Review updated successfully! It will reappear after moderation.'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error editing review: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while editing your review.'
+        }), 500
+
+
+@app.route('/review/<int:review_id>/delete', methods=['DELETE'])
+@login_required
+def delete_review(review_id):
+    """Delete own review"""
+    review = CourseReview.query.get_or_404(review_id)
+    
+    # Check ownership
+    if review.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({
+            'status': 'error',
+            'message': 'You can only delete your own review.'
+        }), 403
+    
+    try:
+        course_name = review.course.name
+        db.session.delete(review)
+        db.session.commit()
+        
+        logger.info(f'Review deleted: {review_id}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Your review for {course_name} has been deleted.'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error deleting review: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting your review.'
+        }), 500
+
+
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
     """Contact page"""
@@ -1297,6 +1531,94 @@ def admin_delete_enrollment(enrollment_id):
         }), 500
 
 
+@app.route('/admin/message/<int:message_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_message(message_id):
+    """Delete a contact message"""
+    message = ContactMessage.query.get_or_404(message_id)
+    
+    try:
+        sender_email = message.email
+        db.session.delete(message)
+        db.session.commit()
+        
+        logger.info(f'Contact message deleted: {message_id} from {sender_email}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Message from {sender_email} has been deleted.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error deleting message: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting the message.'
+        }), 500
+
+
+@app.route('/admin/application/<int:application_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_application(application_id):
+    """Delete an internship application"""
+    application = InternshipApplication.query.get_or_404(application_id)
+    
+    try:
+        applicant_email = application.email
+        applicant_role = application.internship_role
+        db.session.delete(application)
+        db.session.commit()
+        
+        logger.info(f'Internship application deleted: {application_id} from {applicant_email}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Application from {applicant_email} for {applicant_role} has been deleted.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error deleting application: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while deleting the application.'
+        }), 500
+
+
+@app.route('/admin/application/<int:application_id>/update-status', methods=['POST'])
+@login_required
+@admin_required
+def admin_update_application_status(application_id):
+    """Update internship application status"""
+    application = InternshipApplication.query.get_or_404(application_id)
+    
+    try:
+        new_status = request.json.get('status', '').strip()
+        if new_status not in ['pending', 'accepted', 'rejected']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid status.'
+            }), 400
+        
+        application.status = new_status
+        db.session.commit()
+        
+        logger.info(f'Application status updated: {application_id} -> {new_status}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Application status updated to {new_status}.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error updating application status: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while updating the application status.'
+        }), 500
+
+
 @app.route('/admin/courses')
 @login_required
 @admin_required
@@ -1321,6 +1643,76 @@ def admin_messages():
         enrollments=enrollments,
         applications=applications
     )
+
+
+@app.route('/admin/reviews')
+@login_required
+@admin_required
+def admin_reviews():
+    """Manage and moderate course reviews"""
+    pending_reviews = CourseReview.query.filter_by(is_approved=False).all()
+    approved_reviews = CourseReview.query.filter_by(is_approved=True).all()
+    
+    return render_template(
+        'admin_reviews.html',
+        pending_reviews=pending_reviews,
+        approved_reviews=approved_reviews,
+        total_reviews=len(pending_reviews) + len(approved_reviews)
+    )
+
+
+@app.route('/admin/review/<int:review_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def approve_review(review_id):
+    """Approve a review"""
+    review = CourseReview.query.get_or_404(review_id)
+    
+    try:
+        review.is_approved = True
+        db.session.commit()
+        
+        logger.info(f'Review approved: {review_id} by {current_user.email}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Review from {review.user.name} has been approved.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error approving review: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while approving the review.'
+        }), 500
+
+
+@app.route('/admin/review/<int:review_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def reject_review(review_id):
+    """Delete/reject a review"""
+    review = CourseReview.query.get_or_404(review_id)
+    
+    try:
+        user_name = review.user.name
+        course_name = review.course.name
+        db.session.delete(review)
+        db.session.commit()
+        
+        logger.info(f'Review rejected: {review_id} by {current_user.email}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Review from {user_name} for {course_name} has been rejected.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error rejecting review: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred while rejecting the review.'
+        }), 500
 
 
 # ==================== ERROR HANDLERS ====================

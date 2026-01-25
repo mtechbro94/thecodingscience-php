@@ -31,6 +31,12 @@
                                     {{ course.name }}
                                 </a>
                             </h5>
+                            
+                            <!-- Course Rating -->
+                            <div class="mb-2" id="rating-{{ course.id }}">
+                                <div class="star-display"></div>
+                            </div>
+                            
                             <p class="card-text">{{ course.description }}</p>
                             <div class="course-meta">
                                 <small><i class="fas fa-clock"></i> {{ course.duration }}</small><br>
@@ -404,5 +410,33 @@ function registerStudent(courseId, paymentId, method) {
     })
     .catch(e => alert('Error: ' + e));
 }
+
+// Load course ratings
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[id^="rating-"]').forEach(container => {
+        const courseId = container.id.replace('rating-', '');
+        fetch(`/course/${courseId}/reviews`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const avgRating = data.average_rating;
+                    const totalReviews = data.total_reviews;
+                    
+                    let starsHtml = '';
+                    for (let i = 1; i <= 5; i++) {
+                        starsHtml += `<i class="fas fa-star ${i <= Math.round(avgRating) ? 'text-warning' : 'text-secondary'}" style="font-size: 0.9rem;"></i>`;
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="d-flex align-items-center gap-2">
+                            <span>${starsHtml}</span>
+                            <small class="text-muted">(${avgRating} / 5 from ${totalReviews} review${totalReviews !== 1 ? 's' : ''})</small>
+                        </div>
+                    `;
+                }
+            })
+            .catch(e => console.log('Error loading rating:', e));
+    });
+});
 </script>
 {% endblock %}

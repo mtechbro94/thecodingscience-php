@@ -64,7 +64,72 @@
                 </div>
             </div>
             
-            <div class="col-lg-4">
+            <!-- Reviews Section -->
+            <div class="reviews-section mt-5">
+                <h3 class="mb-4">
+                    <i class="fas fa-star text-warning"></i> Student Reviews
+                    <span class="badge bg-secondary ms-2" id="reviewCount">0</span>
+                </h3>
+                
+                <!-- Average Rating Display -->
+                <div class="row mb-4" id="averageRatingContainer" style="display:none;">
+                    <div class="col-md-3">
+                        <div class="card text-center p-3">
+                            <h2 class="text-warning" id="averageRating">0</h2>
+                            <div class="star-rating mb-2" id="averageStars"></div>
+                            <small class="text-muted">Based on <span id="totalReviewCount">0</span> reviews</small>
+                        </div>
+                    </div>
+                    <div class="col-md-9" id="ratingBreakdown"></div>
+                </div>
+                
+                <!-- Write Review Section (only for enrolled students) -->
+                {% if is_enrolled and current_user.is_authenticated %}
+                <div class="card mb-4 border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-pen-fancy"></i> Share Your Review</h5>
+                        <form id="reviewForm" class="mt-3">
+                            <div class="mb-3">
+                                <label class="form-label">Your Rating <span class="text-danger">*</span></label>
+                                <div class="star-input" id="ratingInput">
+                                    {% for i in range(1, 6) %}
+                                    <i class="fas fa-star star-btn" data-rating="{{ i }}" title="{{ i }} Star{{ 's' if i > 1 else '' }}"></i>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" id="selectedRating" name="rating" value="0">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Your Review (Optional)</label>
+                                <textarea class="form-control" id="reviewText" name="review_text" rows="4" 
+                                          placeholder="Share your experience with this course..." maxlength="1000"></textarea>
+                                <small class="text-muted" id="charCount">0/1000</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-paper-plane"></i> Submit Review
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% elif not current_user.is_authenticated %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> <a href="{{ url_for('login') }}">Log in</a> to write a review
+                </div>
+                {% elif not is_enrolled %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Enroll in this course to write a review
+                </div>
+                {% endif %}
+                
+                <!-- Reviews List -->
+                <div id="reviewsList" class="mt-4">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-spinner fa-spin"></i> Loading reviews...
+                    </div>
+                </div>
+            </div>
+
                 <div class="card shadow-lg sticky-top" style="top: 100px;">
                     <div class="card-body text-center">
                         <h3 class="card-title mb-3">Enroll Now</h3>
@@ -227,5 +292,221 @@
             showAlert('An error occurred. Please try again.', 'danger');
         });
     });
+
+    // ==================== REVIEWS FUNCTIONALITY ====================
+    
+    // Star rating input
+    document.querySelectorAll('#ratingInput .star-btn').forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.dataset.rating;
+            document.getElementById('selectedRating').value = rating;
+            
+            // Update visual state
+            document.querySelectorAll('#ratingInput .star-btn').forEach((s, index) => {
+                if (index < rating) {
+                    s.classList.add('active');
+                    s.style.color = '#ffc107';
+                } else {
+                    s.classList.remove('active');
+                    s.style.color = '#ddd';
+                }
+            });
+        });
+        
+        star.addEventListener('mouseover', function() {
+            const rating = this.dataset.rating;
+            document.querySelectorAll('#ratingInput .star-btn').forEach((s, index) => {
+                s.style.color = index < rating ? '#ffc107' : '#ddd';
+            });
+        });
+    });
+
+    document.getElementById('ratingInput').addEventListener('mouseleave', function() {
+        const rating = document.getElementById('selectedRating').value;
+        document.querySelectorAll('#ratingInput .star-btn').forEach((s, index) => {
+            s.style.color = index < rating ? '#ffc107' : '#ddd';
+        });
+    });
+
+    // Character counter
+    if (document.getElementById('reviewText')) {
+        document.getElementById('reviewText').addEventListener('input', function() {
+            document.getElementById('charCount').textContent = this.value.length + '/1000';
+        });
+    }
+
+    // Load reviews
+    function loadReviews() {
+        fetch(`/course/{{ course.id }}/reviews`)
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('reviewsList');
+                
+                if (data.status === 'success') {
+                    const reviews = data.reviews;
+                    const avgRating = data.average_rating;
+                    const totalReviews = data.total_reviews;
+                    
+                    // Update average rating
+                    document.getElementById('reviewCount').textContent = totalReviews;
+                    
+                    if (totalReviews > 0) {
+                        document.getElementById('averageRatingContainer').style.display = 'block';
+                        document.getElementById('averageRating').textContent = avgRating;
+                        document.getElementById('totalReviewCount').textContent = totalReviews;
+                        
+                        // Star display
+                        let starsHtml = '';
+                        for (let i = 1; i <= 5; i++) {
+                            starsHtml += `<i class="fas fa-star ${i <= Math.round(avgRating) ? 'text-warning' : 'text-secondary'}"></i>`;
+                        }
+                        document.getElementById('averageStars').innerHTML = starsHtml;
+                        
+                        // Rating breakdown
+                        const ratingBreakdown = document.getElementById('ratingBreakdown');
+                        let breakdownHtml = '<h6 class="mb-3">Rating Breakdown</h6>';
+                        for (let i = 5; i >= 1; i--) {
+                            const count = reviews.filter(r => r.rating === i).length;
+                            const percent = (count / totalReviews) * 100;
+                            breakdownHtml += `
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small>${i} <i class="fas fa-star text-warning"></i></small>
+                                        <small>${count} review${count !== 1 ? 's' : ''}</small>
+                                    </div>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-warning" style="width: ${percent}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        ratingBreakdown.innerHTML = breakdownHtml;
+                    }
+                    
+                    // Display reviews
+                    if (reviews.length > 0) {
+                        let reviewsHtml = '';
+                        reviews.forEach(review => {
+                            let starsHtml = '';
+                            for (let i = 1; i <= 5; i++) {
+                                starsHtml += `<i class="fas fa-star ${i <= review.rating ? 'text-warning' : 'text-secondary'}"></i>`;
+                            }
+                            
+                            reviewsHtml += `
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="card-title mb-1">${review.user_name}</h6>
+                                                <div class="mb-2">${starsHtml}</div>
+                                                <small class="text-muted">${review.created_at}</small>
+                                            </div>
+                                        </div>
+                                        ${review.review_text ? `<p class="card-text mt-2">${review.review_text}</p>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = reviewsHtml;
+                        
+                        // Add pagination if needed
+                        if (data.total_pages > 1) {
+                            let paginationHtml = '<nav class="mt-4"><ul class="pagination justify-content-center">';
+                            for (let i = 1; i <= data.total_pages; i++) {
+                                paginationHtml += `<li class="page-item ${i === data.current_page ? 'active' : ''}">
+                                    <button class="page-link" onclick="loadReviewsPage(${i})">${i}</button>
+                                </li>`;
+                            }
+                            paginationHtml += '</ul></nav>';
+                            container.innerHTML += paginationHtml;
+                        }
+                    } else {
+                        container.innerHTML = '<div class="alert alert-info"><i class="fas fa-star"></i> No reviews yet. Be the first to review this course!</div>';
+                    }
+                }
+            })
+            .catch(e => {
+                console.error('Error loading reviews:', e);
+                document.getElementById('reviewsList').innerHTML = '<div class="alert alert-danger">Error loading reviews</div>';
+            });
+    }
+
+    // Load reviews on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadReviews();
+    });
+
+    // Submit review
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const rating = document.getElementById('selectedRating').value;
+            const reviewText = document.getElementById('reviewText').value;
+            
+            if (!rating || rating === '0') {
+                alert('Please select a rating');
+                return;
+            }
+            
+            fetch(`/course/{{ course.id }}/review`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rating: parseInt(rating),
+                    review_text: reviewText
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                alert(data.message);
+                if (data.status === 'success') {
+                    document.getElementById('reviewForm').reset();
+                    document.getElementById('selectedRating').value = '0';
+                    document.getElementById('charCount').textContent = '0/1000';
+                    document.querySelectorAll('#ratingInput .star-btn').forEach(s => s.style.color = '#ddd');
+                    loadReviews();
+                }
+            })
+            .catch(e => alert('Error submitting review: ' + e));
+        });
+    }
+
+    function loadReviewsPage(page) {
+        fetch(`/course/{{ course.id }}/reviews?page=${page}`)
+            .then(r => r.json())
+            .then(data => {
+                loadReviews();
+                document.querySelector('.reviews-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+    }
 </script>
+
+<style>
+    .star-rating .fa-star {
+        color: #ddd;
+        font-size: 1.2rem;
+        margin: 0 2px;
+    }
+
+    .star-input .star-btn {
+        cursor: pointer;
+        font-size: 1.8rem;
+        margin: 0 5px;
+        transition: all 0.2s ease;
+    }
+
+    .star-input .star-btn:hover {
+        transform: scale(1.2);
+    }
+
+    #ratingInput .star-btn {
+        color: #ddd;
+    }
+
+    #ratingInput .star-btn.active {
+        color: #ffc107;
+    }
+</style>
 {% endblock %}

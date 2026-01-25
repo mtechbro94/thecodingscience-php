@@ -44,8 +44,9 @@ nav.navbar-custom:hover {
     transition: transform 0.3s ease;
     display: flex;
     align-items: center;
-    margin-right: 2rem;
+    margin-right: auto;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .navbar-logo {
