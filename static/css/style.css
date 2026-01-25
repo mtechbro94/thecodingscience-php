@@ -438,12 +438,14 @@ nav.navbar-custom:hover {
 .course-price {
     display: inline-block;
     background-color: var(--success-color, #28a745);
-    color: white;
+    color: #fff;
     padding: 0.35rem 0.8rem;
     border-radius: 20px;
     font-size: 0.95rem;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
 
 .course-meta {
