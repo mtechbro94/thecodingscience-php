@@ -51,8 +51,8 @@ A production-ready Flask web application for managing online courses, student en
    SECRET_KEY=your-secret-key-change-this
    SENDER_EMAIL=your-email@gmail.com
    SENDER_PASSWORD=your-app-password
-   ADMIN_EMAIL=admin@thecodingscience.com
-   ADMIN_PASSWORD=admin123
+   ADMIN_EMAIL=myemail.com
+   ADMIN_PASSWORD=mypassword
    ```
 
 5. **Run the application:**
