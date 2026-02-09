@@ -412,8 +412,13 @@ def load_user(user_id):
 
 def seed_courses(force=False):
     """Initialize database with course data"""
-    if not force and Course.query.first() is not None:
-        return  # Database already seeded
+    from sqlalchemy.exc import IntegrityError
+    
+    # Check if courses already exist
+    existing_count = Course.query.count()
+    if not force and existing_count > 0:
+        logger.info(f'Courses already exist ({existing_count} found). Skipping seed.')
+        return
     
     import json
     
@@ -432,17 +437,25 @@ def seed_courses(force=False):
             curriculum=json.dumps(course_data['curriculum'])
         ))
     
-    for course in courses:
-        db.session.add(course)
-    
-    db.session.commit()
-    logger.info('Database seeded with 9 comprehensive courses.')
+    try:
+        for course in courses:
+            db.session.add(course)
+        db.session.commit()
+        logger.info('Database seeded with 9 comprehensive courses.')
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.warning(f'IntegrityError during course seeding (likely concurrent insert by another worker): {str(e)[:100]}')
 
 
 def seed_blogs(force=False):
     """Initialize database with blog post data"""
-    if not force and Blog.query.first() is not None:
-        return  # Database already seeded
+    from sqlalchemy.exc import IntegrityError
+    
+    # Check if blogs already exist
+    existing_count = Blog.query.count()
+    if not force and existing_count > 0:
+        logger.info(f'Blogs already exist ({existing_count} found). Skipping seed.')
+        return
     
     blogs = []
     
@@ -459,11 +472,14 @@ def seed_blogs(force=False):
             is_published=blog_data.get('is_published', True)
         ))
     
-    for blog in blogs:
-        db.session.add(blog)
-    
-    db.session.commit()
-    logger.info(f'Database seeded with {len(blogs)} blog posts.')
+    try:
+        for blog in blogs:
+            db.session.add(blog)
+        db.session.commit()
+        logger.info(f'Database seeded with {len(blogs)} blog posts.')
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.warning(f'IntegrityError during blog seeding (likely concurrent insert by another worker): {str(e)[:100]}')
 
 
 # ==================== DATABASE INITIALIZATION ====================
