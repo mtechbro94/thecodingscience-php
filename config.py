@@ -67,8 +67,12 @@ class ProductionConfig(Config):
     
     DEBUG = False
     TESTING = False
-    # Force /tmp for Railway - ignore DATABASE_URL env var
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/coding_science.db'
+    # Database URL fix for SQLAlchemy (postgres:// to postgresql://)
+    db_url = os.getenv('DATABASE_URL')
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    SQLALCHEMY_DATABASE_URI = db_url or 'sqlite:////tmp/coding_science.db'
     
     # Enforce production security
     SESSION_COOKIE_SECURE = True
