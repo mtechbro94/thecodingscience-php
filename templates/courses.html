@@ -22,7 +22,7 @@
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100 shadow-sm course-card">
                         {% if course.image %}
-                        <img src="{{ url_for('static', filename='images/' + course.image) }}" alt="{{ course.name }}" class="card-img-top course-image">
+                        <img src="{{ url_for('static', filename='images/' + course.image) }}" alt="{{ course.name }}" class="card-img-top course-image" loading="lazy" decoding="async">
                         {% endif %}
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-2">

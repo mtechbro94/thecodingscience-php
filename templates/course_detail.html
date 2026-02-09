@@ -8,8 +8,8 @@
         <div class="row">
             <div class="col-lg-8">
                 {% if course.image %}
-                <img src="{{ url_for('static', filename='images/' + course.image) }}" alt="{{ course.name }}"
-                    class="img-fluid rounded mb-4 shadow">
+                <img src="{{ url_for('static', filename='images/' + course.image) }}" alt="{{ course.name }}" 
+                    class="img-fluid rounded mb-4 shadow" loading="lazy" decoding="async">
                 {% endif %}
 
                 <h1 class="mb-3">{{ course.name }}</h1>

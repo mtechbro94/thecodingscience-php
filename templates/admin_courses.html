@@ -43,9 +43,9 @@
                                 <td>{{ course.id }}</td>
                                 <td>
                                     {% if course.image %}
-                                    <img src="{{ url_for('static', filename='images/' + course.image) }}" 
+                                     <img src="{{ url_for('static', filename='images/' + course.image) }}" 
                                          alt="{{ course.name }}" 
-                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" loading="lazy" decoding="async">
                                     {% else %}
                                     <span class="text-muted">No image</span>
                                     {% endif %}
