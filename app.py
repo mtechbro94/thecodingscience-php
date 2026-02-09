@@ -413,31 +413,76 @@ def init_db_on_startup():
             db.create_all()
             logger.info("[OK] Database tables created/verified")
             
+            # Use a DB-level advisory lock on PostgreSQL to ensure only one process
+            # performs heavy migrations / reseed at a time. If lock is not acquired,
+            # another worker is handling initialization — skip heavy steps.
+            from sqlalchemy import text
+            engine_name = db.engine.dialect.name
+            pg_conn = None
+            acquired = True
+            lock_id = 987654321
+            if engine_name == 'postgresql':
+                try:
+                    pg_conn = db.engine.connect()
+                    res = pg_conn.execute(text("SELECT pg_try_advisory_lock(:id)"), {"id": lock_id})
+                    acquired = bool(res.scalar())
+                    if not acquired:
+                        logger.info("Another process is initializing DB (advisory lock not acquired). Skipping heavy init.")
+                        pg_conn.close()
+                        return
+                except Exception as lock_err:
+                    logger.warning(f"Advisory lock check failed: {lock_err} - continuing without lock")
+                    if pg_conn:
+                        try:
+                            pg_conn.close()
+                        except:
+                            pass
+            
             # Migration: Add summary column if it doesn't exist (for existing databases)
             try:
-                from sqlalchemy import text
-                with db.engine.connect() as conn:
-                    # Check if summary column exists
-                    result = conn.execute(text("PRAGMA table_info(courses)"))
-                    columns = [row[1] for row in result.fetchall()]
-                    if 'summary' not in columns:
-                        conn.execute(text("ALTER TABLE courses ADD COLUMN summary VARCHAR(200)"))
-                        conn.commit()
-                        logger.info("[OK] Added 'summary' column to courses table")
+                # SQLite uses PRAGMA; Postgres uses information_schema — handle both
+                if engine_name == 'sqlite':
+                    with db.engine.connect() as conn:
+                        result = conn.execute(text("PRAGMA table_info(courses)"))
+                        columns = [row[1] for row in result.fetchall()]
+                        if 'summary' not in columns:
+                            conn.execute(text("ALTER TABLE courses ADD COLUMN summary VARCHAR(200)"))
+                            conn.commit()
+                            logger.info("[OK] Added 'summary' column to courses table")
+                elif engine_name == 'postgresql':
+                    # Postgres: check information_schema
+                    with db.engine.connect() as conn:
+                        result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='courses'"))
+                        columns = [row[0] for row in result.fetchall()]
+                        if 'summary' not in columns:
+                            conn.execute(text("ALTER TABLE courses ADD COLUMN summary VARCHAR(200)"))
+                            logger.info("[OK] Added 'summary' column to courses table")
+                else:
+                    logger.info(f"Skipping summary migration for unsupported engine: {engine_name}")
             except Exception as migration_error:
                 logger.warning(f"Migration check for summary column: {migration_error}")
 
             # Migration: Add utr column to enrollments if missing
             try:
-                from sqlalchemy import text
-                with db.engine.connect() as conn:
-                    result = conn.execute(text("PRAGMA table_info(enrollments)"))
-                    columns = [row[1] for row in result.fetchall()]
-                    if 'utr' not in columns:
-                        conn.execute(text("ALTER TABLE enrollments ADD COLUMN utr VARCHAR(50)"))
-                        conn.execute(text("CREATE INDEX ix_enrollments_utr ON enrollments (utr)"))
-                        conn.commit()
-                        logger.info("[OK] Added 'utr' column to enrollments table")
+                if engine_name == 'sqlite':
+                    with db.engine.connect() as conn:
+                        result = conn.execute(text("PRAGMA table_info(enrollments)"))
+                        columns = [row[1] for row in result.fetchall()]
+                        if 'utr' not in columns:
+                            conn.execute(text("ALTER TABLE enrollments ADD COLUMN utr VARCHAR(50)"))
+                            conn.execute(text("CREATE INDEX ix_enrollments_utr ON enrollments (utr)"))
+                            conn.commit()
+                            logger.info("[OK] Added 'utr' column to enrollments table")
+                elif engine_name == 'postgresql':
+                    with db.engine.connect() as conn:
+                        result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='enrollments'"))
+                        columns = [row[0] for row in result.fetchall()]
+                        if 'utr' not in columns:
+                            conn.execute(text("ALTER TABLE enrollments ADD COLUMN utr VARCHAR(50)"))
+                            conn.execute(text("CREATE INDEX ix_enrollments_utr ON enrollments (utr)"))
+                            logger.info("[OK] Added 'utr' column to enrollments table")
+                else:
+                    logger.info(f"Skipping utr migration for unsupported engine: {engine_name}")
             except Exception as migration_error:
                 logger.warning(f"Migration check for utr column: {migration_error}")
             
@@ -729,6 +774,20 @@ Office workers, admins, managers wanting to automate daily tasks, anyone looking
                 logger.error(f"Error initializing database: {str(e)}")
                 print(f"✗ Database init error: {str(e)}", file=sys.stderr, flush=True)
                 traceback.print_exc(file=sys.stderr)
+        finally:
+            # Release advisory lock if we acquired it
+            try:
+                if engine_name == 'postgresql' and acquired and pg_conn is not None:
+                    try:
+                        pg_conn.execute(text("SELECT pg_advisory_unlock(:id)"), {"id": lock_id})
+                    except Exception:
+                        pass
+                    try:
+                        pg_conn.close()
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
 
 # Initialize database at startup in background to avoid blocking gunicorn worker startup
