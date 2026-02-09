@@ -331,6 +331,37 @@ class UnclaimedPayment(db.Model):
         return f'<Payment {self.utr} - ₹{self.amount}>'
 
 
+class AppState(db.Model):
+    """Track application initialization state to prevent repeated initialization"""
+    __tablename__ = 'app_state'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    value = db.Column(db.String(255), nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<AppState {self.key}={self.value}>'
+    
+    @classmethod
+    def get(cls, key, default=None):
+        """Get state value by key"""
+        state = cls.query.filter_by(key=key).first()
+        return state.value if state else default
+    
+    @classmethod
+    def set(cls, key, value):
+        """Set state value by key (create or update)"""
+        state = cls.query.filter_by(key=key).first()
+        if state:
+            state.value = str(value)
+            state.updated_at = datetime.utcnow()
+        else:
+            state = cls(key=key, value=str(value))
+            db.session.add(state)
+        db.session.commit()
+
+
 # ==================== FLASK-LOGIN HELPER ====================
 
 @login_manager.user_loader
@@ -699,29 +730,34 @@ Office workers, admins, managers wanting to automate daily tasks, anyone looking
                 traceback.print_exc(file=sys.stderr)
 
 
-# Initialize database on startup
-db_initialized = False
-
-@app.before_request
+# Initialize database at startup - NOT on every request (removed @app.before_request)
+# Running init_db_on_startup() on every request was causing worker timeouts
 def init_db_if_needed():
-    """Lazy initialization of database on first request"""
-    global db_initialized
-    if not db_initialized:
+    """Initialize database only if not already initialized (uses database state tracking)"""
+    with app.app_context():
         try:
+            # Create all tables first
+            db.create_all()
+            
+            # Check if initialization already done via database state
+            init_status = AppState.get('db_initialized')
+            if init_status == 'true':
+                print("[OK] Database already initialized (skipping re-init)", file=sys.stdout, flush=True)
+                return
+            
+            # Run full initialization only once
             init_db_on_startup()
-            db_initialized = True
-            print("[OK] Database initialized successfully on first request", file=sys.stdout, flush=True)
+            AppState.set('db_initialized', 'true')
+            print("[OK] Database initialized successfully at startup", file=sys.stdout, flush=True)
         except Exception as e:
-            print(f"✗ ERROR during database initialization: {e}", file=sys.stderr, flush=True)
-            traceback.print_exc(file=sys.stderr)
+            error_str = str(e).lower()
+            # Ignore table existence errors - expected in multi-worker deployments
+            if "already exists" not in error_str and "table" not in error_str:
+                print(f"✗ ERROR during database initialization: {e}", file=sys.stderr, flush=True)
+                traceback.print_exc(file=sys.stderr)
 
-# Also try to initialize at startup but don't block if it fails
-try:
-    init_db_on_startup()
-    db_initialized = True
-    print("[OK] Database initialized successfully at startup", file=sys.stdout, flush=True)
-except Exception as e:
-    print(f"⚠ Database initialization deferred to first request: {e}", file=sys.stderr, flush=True)
+# Call initialization ONCE at startup (not on every request!)
+init_db_if_needed()
 
 
 
