@@ -296,6 +296,7 @@ class Blog(db.Model):
     content = db.Column(db.Text, nullable=False)
     image = db.Column(db.String(200), nullable=True)
     author = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(50), nullable=True)  # Display date (e.g., "Feb 2, 2026")
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     is_published = db.Column(db.Boolean, default=True)
     
@@ -449,9 +450,10 @@ def seed_blogs(force=False):
     for blog_data in BLOG_POSTS:
         blogs.append(Blog(
             title=blog_data.get('title', 'Untitled'),
-            slug=blog_data.get('slug', '').lower().replace(' ', '-'),
+            slug=blog_data.get('slug', blog_data.get('title', 'untitled')).lower().replace(' ', '-'),
             excerpt=blog_data.get('excerpt', ''),
             content=blog_data.get('content', ''),
+            date=blog_data.get('date', ''),  # Include the formatted date
             image=blog_data.get('image', 'blog-default.jpg'),
             author=blog_data.get('author', 'The Coding Science'),
             is_published=blog_data.get('is_published', True)
@@ -547,6 +549,28 @@ def init_db_on_startup():
                     logger.info(f"Skipping utr migration for unsupported engine: {engine_name}")
             except Exception as migration_error:
                 logger.warning(f"Migration check for utr column: {migration_error}")
+            
+            # Migration: Add date column to blogs if missing
+            try:
+                if engine_name == 'sqlite':
+                    with db.engine.connect() as conn:
+                        result = conn.execute(text("PRAGMA table_info(blogs)"))
+                        columns = [row[1] for row in result.fetchall()]
+                        if 'date' not in columns:
+                            conn.execute(text("ALTER TABLE blogs ADD COLUMN date VARCHAR(50)"))
+                            conn.commit()
+                            logger.info("[OK] Added 'date' column to blogs table")
+                elif engine_name == 'postgresql':
+                    with db.engine.connect() as conn:
+                        result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='blogs'"))
+                        columns = [row[0] for row in result.fetchall()]
+                        if 'date' not in columns:
+                            conn.execute(text("ALTER TABLE blogs ADD COLUMN date VARCHAR(50)"))
+                            logger.info("[OK] Added 'date' column to blogs table")
+                else:
+                    logger.info(f"Skipping date migration for unsupported engine: {engine_name}")
+            except Exception as migration_error:
+                logger.warning(f"Migration check for date column: {migration_error}")
             
             # Update existing course descriptions and summaries with new formatted content
             try:
