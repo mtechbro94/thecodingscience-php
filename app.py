@@ -30,6 +30,7 @@ try:
     import re
     from content_data import COURSE_SEED_DATA, SERVICES_LIST, INTERNSHIPS_LIST, ABOUT_VALUES, BLOG_POSTS
     import markdown
+    import threading
 except Exception as e:
     print(f"✗ CRITICAL ERROR during imports: {e}", file=sys.stderr, flush=True)
     traceback.print_exc(file=sys.stderr)
@@ -730,34 +731,39 @@ Office workers, admins, managers wanting to automate daily tasks, anyone looking
                 traceback.print_exc(file=sys.stderr)
 
 
-# Initialize database at startup - NOT on every request (removed @app.before_request)
-# Running init_db_on_startup() on every request was causing worker timeouts
-def init_db_if_needed():
-    """Initialize database only if not already initialized (uses database state tracking)"""
+# Initialize database at startup in background to avoid blocking gunicorn worker startup
+def _background_init_runner():
+    """Background runner for DB init: runs once if not already initialized."""
     with app.app_context():
         try:
-            # Create all tables first
+            # Ensure tables exist (creates AppState too)
             db.create_all()
-            
-            # Check if initialization already done via database state
             init_status = AppState.get('db_initialized')
             if init_status == 'true':
-                print("[OK] Database already initialized (skipping re-init)", file=sys.stdout, flush=True)
+                logger.info("[OK] Database already initialized (skipping background init)")
                 return
-            
-            # Run full initialization only once
+
+            logger.info("Starting background database initialization")
             init_db_on_startup()
             AppState.set('db_initialized', 'true')
-            print("[OK] Database initialized successfully at startup", file=sys.stdout, flush=True)
+            logger.info("[OK] Database initialized successfully (background)")
         except Exception as e:
             error_str = str(e).lower()
             # Ignore table existence errors - expected in multi-worker deployments
             if "already exists" not in error_str and "table" not in error_str:
-                print(f"✗ ERROR during database initialization: {e}", file=sys.stderr, flush=True)
-                traceback.print_exc(file=sys.stderr)
+                logger.error(f"Background DB init error: {e}")
+                traceback.print_exc()
 
-# Call initialization ONCE at startup (not on every request!)
-init_db_if_needed()
+
+def start_background_init():
+    """Start DB init in a daemon thread so startup isn't blocked."""
+    t = threading.Thread(target=_background_init_runner, daemon=True)
+    t.start()
+    print("[OK] Background DB initialization started", file=sys.stdout, flush=True)
+
+
+# Kick off background initialization (non-blocking)
+start_background_init()
 
 
 
