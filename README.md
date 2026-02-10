@@ -1,279 +1,59 @@
-# The Coding Science - Advanced Tech Platform
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-## 🎓 School of Technology and AI Innovations
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-A production-ready Flask web application for managing online courses, student enrollments, and payments.
+## About Laravel
 
-## ✨ Features
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-### Core Features
-- ✅ **User Authentication** - Registration, login, and session management
-- ✅ **Course Management** - Browse courses with pagination and detailed views
-- ✅ **Student Dashboard** - View enrolled courses and track progress
-- ✅ **Payment Integration** - UPI payment with QR code generation
-- ✅ **Email Notifications** - Automated welcome emails after enrollment
-- ✅ **Admin Panel** - Complete admin dashboard for managing students, courses, and enrollments
-- ✅ **Responsive Design** - Mobile-friendly Bootstrap 5 interface
-- ✅ **Database Backend** - SQLite database with SQLAlchemy ORM
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-### Admin Features
-- 📊 Dashboard with statistics
-- 👥 Student management (view, delete)
-- 📚 Course management
-- ✅ Enrollment verification (single and bulk)
-- 📧 Automated email sending on verification
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## 🚀 Quick Start
+## Learning Laravel
 
-### Prerequisites
-- Python 3.8 or higher
-- Virtual environment (`.venv` folder)
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-### Installation
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-1. **Navigate to project directory:**
-   ```bash
-   cd C:\Users\Mtechbro-94\Desktop\TheCodingScience
-   ```
+## Laravel Sponsors
 
-2. **Activate virtual environment:**
-   ```bash
-   .\.venv\Scripts\activate
-   ```
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-3. **Install dependencies (if not already installed):**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Premium Partners
 
-4. **Create `.env` file** (copy from `.env.example` if available):
-   ```env
-   SECRET_KEY=your-secret-key-change-this
-   SENDER_EMAIL=your-email@gmail.com
-   SENDER_PASSWORD=your-app-password
-   ADMIN_EMAIL=myemail.com
-   ADMIN_PASSWORD=mypassword
-   ```
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-5. **Run the application:**
-   ```bash
-   .\.venv\Scripts\python.exe app.py
-   ```
+## Contributing
 
-6. **Open browser:**
-   ```
-   http://localhost:5000
-   ```
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## 📁 Project Structure
+## Code of Conduct
 
-```
-TheCodingScience/
-├── app.py                      # Main Flask application
-├── requirements.txt            # Python dependencies
-├── README.md                   # This file
-├── SETUP_PAYMENT_EMAIL.md      # Payment & email setup guide
-├── instance/
-│   └── coding_science.db      # SQLite database (created on first run)
-├── templates/                  # Jinja2 HTML templates
-│   ├── base.html              # Base template
-│   ├── index.html             # Homepage
-│   ├── courses.html           # Courses listing
-│   ├── course_detail.html     # Course detail page
-│   ├── dashboard.html         # Student dashboard
-│   ├── login.html             # Login page
-│   ├── register.html          # Registration page
-│   ├── admin_panel.html        # Admin dashboard
-│   ├── admin_students.html     # Student management
-│   ├── admin_enrollments.html  # Enrollment management
-│   ├── admin_courses.html     # Course management
-│   └── ...                    # Other templates
-└── static/                     # Static files
-    ├── css/
-    │   └── style.css          # Custom styles
-    ├── js/
-    │   └── main.js            # Custom JavaScript
-    └── images/                 # Course images
-```
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-## 🔐 Admin Access
+## Security Vulnerabilities
 
-### Default Admin Account
-On first run, a default admin user is created:
-- **Email**: `admin@thecodingscience.com` (or from `.env`)
-- **Password**: `admin123` (or from `.env`)
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-**⚠️ Change the default password immediately in production!**
+## License
 
-### Create Additional Admin Users
-
-Using Flask CLI:
-```bash
-.\.venv\Scripts\python.exe -m flask create-admin
-```
-
-Or using Python shell:
-```python
-from app import app, db, User
-with app.app_context():
-    admin = User(name='admin', email='admin@theccodingscience.com', is_admin=True)
-    admin.set_password('secure-password')
-    db.session.add(admin)
-    db.session.commit()
-```
-
-## 📧 Email Configuration
-
-### Gmail SMTP Setup
-
-1. Enable 2-Factor Authentication on your Gmail account
-2. Generate an App Password:
-   - Go to Google Account → Security → App passwords
-   - Select "Mail" and your device
-   - Copy the 16-character password
-3. Update `.env` file:
-   ```env
-   SENDER_EMAIL=your-email@gmail.com
-   SENDER_PASSWORD=your-16-char-app-password
-   ```
-
-See `SETUP_PAYMENT_EMAIL.md` for detailed instructions.
-
-## 💳 Payment Setup
-
-The platform supports UPI payments with QR code generation. Configure UPI IDs in `app.py`:
-
-```python
-UPI_IDS = [
-    {'id': 'your-upi@ybl', 'label': 'PhonePe'},
-    {'id': 'your-upi@oksbi', 'label': 'SBI'},
-]
-```
-
-## 🗄️ Database
-
-### Models
-- **User** - Students and admins
-- **Course** - Course information
-- **Enrollment** - Student course enrollments with payment tracking
-
-### Database Commands
-
-**Initialize database:**
-```python
-from app import app, db
-with app.app_context():
-    db.create_all()
-```
-
-**Access Flask shell:**
-```bash
-.\.venv\Scripts\python.exe -m flask shell
-```
-
-## 🛠️ Development
-
-### Running in Development Mode
-```bash
-.\.venv\Scripts\python.exe app.py
-```
-
-### Environment Variables
-Create a `.env` file with:
-```env
-SECRET_KEY=your-secret-key
-DATABASE_URL=sqlite:///coding_science.db
-SENDER_EMAIL=your-email@gmail.com
-SENDER_PASSWORD=your-app-password
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=admin123
-FLASK_ENV=development
-FLASK_PORT=5000
-```
-
-## 📝 Available Routes
-
-### Public Routes
-- `/` - Homepage
-- `/courses` - Browse all courses
-- `/course/<id>` - Course detail page
-- `/about` - About page
-- `/services` - Services page
-- `/internships` - Internships page
-- `/contact` - Contact form
-- `/register` - User registration
-- `/login` - User login
-
-### Student Routes (Login Required)
-- `/dashboard` - Student dashboard
-- `/enroll/<course_id>` - Enroll in a course
-- `/logout` - Logout
-
-### Admin Routes (Admin Only)
-- `/admin/panel` - Admin dashboard
-- `/admin/students` - Manage students
-- `/admin/student/<id>` - Student details
-- `/admin/enrollments` - Manage enrollments
-- `/admin/courses` - Manage courses
-
-## 🔧 Technologies Used
-
-- **Backend**: Flask 2.3.3
-- **Database**: SQLite with Flask-SQLAlchemy 3.0.5
-- **Authentication**: Flask-Login 0.6.2
-- **Frontend**: Bootstrap 5.3.3, jQuery 3.6.0, Font Awesome 6.7.2
-- **Email**: SMTP (Gmail)
-- **QR Codes**: segno 1.6.6
-- **Environment**: python-dotenv 1.2.1
-
-## 📊 Current Data
-
-### Courses (9 courses available)
-- Full Stack Development (₹1499)
-- Programming with Python (₹999)
-- Data Science from Scratch (₹1499)
-- Ethical Hacking and Penetration Testing (₹1499)
-- Crash Course in Computer Science (₹499)
-- Machine Learning and AI Foundations (₹999)
-- Data Analytics and BI Tools (₹1499)
-- Android App Development (₹1499)
-- MS Office Automation and AI Tools (₹499)
-
-### Internships (3 positions)
-- Web Development Intern (₹999)
-- Python Development Intern (₹999)
-- Data Science and AI Intern (₹999)
-
-## 🚨 Troubleshooting
-
-### Port Already in Use
-Edit `app.py` and change the port:
-```python
-app.run(port=8000)  # Change from 5000 to 8000
-```
-
-### Database Issues
-Delete `instance/coding_science.db` and restart the app to recreate the database.
-
-### Email Not Sending
-- Verify Gmail app password is correct
-- Check firewall/antivirus settings
-- Ensure 2FA is enabled on Gmail
-
-### Admin Panel Not Accessible
-- Ensure you're logged in as an admin user
-- Check `is_admin=True` in database for your user
-
-## 📞 Support
-
-- **Email**: academy@thecodingscience.com
-- **Phone**: +917006196821
-- **Location**: Jammu and Kashmir, India
-
-## 📄 License
-
-This project is proprietary software for The Coding Science.
-
----
-
-**Built with ❤️ for The Coding Science**
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

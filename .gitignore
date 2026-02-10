@@ -1,76 +1,24 @@
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual Environment
-.venv/
-venv/
-ENV/
-env/
-bin/
-lib/
-
-# Flask
-instance/
-.webassets-cache
-*.db
-*.sqlite
-*.sqlite3
-
-# Database backups
-*.db.backup
-*.sqlite.backup
-*.db.*
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-*.sublime-project
-*.sublime-workspace
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-.directory
-
-# Logs
-logs/
 *.log
-*.log.*
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*~
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Type checking
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Secrets
-secrets/
-credentials.json
-
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
