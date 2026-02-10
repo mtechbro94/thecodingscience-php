@@ -12,6 +12,7 @@ try:
     from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
     from flask_sqlalchemy import SQLAlchemy
     from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+    from flask_migrate import Migrate
     from werkzeug.security import generate_password_hash, check_password_hash
     from werkzeug.exceptions import BadRequest
     from datetime import datetime, timedelta
@@ -31,6 +32,10 @@ try:
     from content_data import COURSE_SEED_DATA, SERVICES_LIST, INTERNSHIPS_LIST, ABOUT_VALUES, BLOG_POSTS
     import markdown
     import threading
+    import razorpay
+    import hmac
+    import hashlib
+    from flask_talisman import Talisman
 except Exception as e:
     print(f"✗ CRITICAL ERROR during imports: {e}", file=sys.stderr, flush=True)
     traceback.print_exc(file=sys.stderr)
@@ -71,9 +76,10 @@ except Exception as e:
     logger.warning(f"WhiteNoise initialization failed: {e}")
 
 
-# Security: Enable HTTPS only in production (disabled for Railway)
-# if not app.debug:
-#     Talisman(app, force_https=True, strict_transport_security=True)
+# Security: Enable HTTPS only in production
+if not app.debug and app.config['PREFERRED_URL_SCHEME'] == 'https':
+    Talisman(app, force_https=True, strict_transport_security=True)
+    print("[OK] Talisman (HTTPS enforcement) initialized successfully", file=sys.stdout, flush=True)
 
 # Email Configuration
 SMTP_SERVER = 'smtp.gmail.com'
@@ -89,6 +95,24 @@ UPI_IDS = [
     {'id': os.getenv('UPI_ID_3', 'upi@example'), 'label': 'Bank 3'}
 ]
 UPI_NAME = os.getenv('UPI_NAME', 'The Coding Science')
+
+# Razorpay Configuration
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+
+# Initialize Razorpay client if credentials are available
+try:
+    if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
+        razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+        print("[OK] Razorpay client initialized successfully", file=sys.stdout, flush=True)
+    else:
+        razorpay_client = None
+        print("[WARN] Razorpay credentials not found. UPI-only mode active.", file=sys.stdout, flush=True)
+except Exception as e:
+    razorpay_client = None
+    print(f"[WARN] Razorpay initialization failed: {e}", file=sys.stdout, flush=True)
+    logger.warning(f"Razorpay initialization failed: {e}")
 
 # Logging Configuration with rotation
 log_dir = os.path.dirname(app.config.get('LOG_FILE', 'logs/app.log'))
@@ -112,6 +136,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
+migrate = Migrate(app, db)
 
 
 # ==================== DATABASE MODELS ====================
@@ -225,6 +250,12 @@ class Enrollment(db.Model):
     enrolled_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     verified_at = db.Column(db.DateTime, nullable=True)
     utr = db.Column(db.String(50), nullable=True, index=True)  # User submitted UTR
+    
+    # Razorpay-specific fields
+    razorpay_order_id = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    razorpay_payment_id = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    razorpay_signature = db.Column(db.String(255), nullable=True)
+    payment_gateway = db.Column(db.String(50), nullable=True)  # 'razorpay', 'upi-manual', 'upi-webhook'
     
     def __repr__(self):
         return f'<Enrollment {self.user_id} -> {self.course_id}>'
@@ -490,8 +521,15 @@ def init_db_on_startup():
         try:
             # Create all tables (if they don't exist)
             # SQLAlchemy create_all() is supposed to be idempotent, but we catch any errors
-            db.create_all()
-            logger.info("[OK] Database tables created/verified")
+            try:
+                db.create_all()
+                logger.info("[OK] Database tables created/verified")
+            except Exception as table_err:
+                # Ignore "table already exists" errors and continue
+                if 'already exists' in str(table_err):
+                    logger.info("[OK] Database tables already exist (skipping creation)")
+                else:
+                    logger.warning(f"Database table creation warning: {table_err}")
             
             # Use a DB-level advisory lock on PostgreSQL to ensure only one process
             # performs heavy migrations / reseed at a time. If lock is not acquired,
@@ -901,7 +939,12 @@ def _background_init_runner():
     with app.app_context():
         try:
             # Ensure tables exist (creates AppState too)
-            db.create_all()
+            try:
+                db.create_all()
+            except Exception as table_err:
+                # Ignore "table already exists" errors and continue
+                if 'already exists' not in str(table_err):
+                    logger.warning(f"Database table creation warning: {table_err}")
             init_status = AppState.get('db_initialized')
             if init_status == 'true':
                 logger.info("[OK] Database already initialized (skipping background init)")
@@ -1862,6 +1905,214 @@ def trainer_dashboard():
         total_students=total_students,
         pending_reviews=pending_reviews
     )
+
+
+# ==================== RAZORPAY PAYMENT ROUTES ====================
+
+@app.route('/razorpay/create-order/<int:course_id>', methods=['POST'])
+@login_required
+def create_razorpay_order(course_id):
+    """Create a Razorpay order for a course"""
+    if not razorpay_client:
+        return jsonify({
+            'status': 'error',
+            'message': 'Payment gateway not configured'
+        }), 503
+    
+    try:
+        course = Course.query.get_or_404(course_id)
+        
+        # Check for duplicate enrollment
+        existing = Enrollment.query.filter_by(
+            user_id=current_user.id,
+            course_id=course_id
+        ).first()
+        
+        if existing:
+            return jsonify({
+                'status': 'error',
+                'message': f'You are already enrolled in {course.name}.'
+            }), 400
+        
+        # Create Razorpay order (amount in paise)
+        order_data = {
+            'amount': int(course.price * 100),  # Convert to paise
+            'currency': 'INR',
+            'payment_capture': '1',  # Auto capture payment
+            'notes': {
+                'course_name': course.name,
+                'course_id': str(course_id),
+                'user_id': str(current_user.id),
+                'user_email': current_user.email
+            }
+        }
+        
+        order = razorpay_client.order.create(data=order_data)
+        
+        logger.info(f'Razorpay order created: {order["id"]} for {current_user.email}')
+        
+        return jsonify({
+            'status': 'success',
+            'order_id': order['id'],
+            'amount': course.price,
+            'amount_paise': order['amount'],
+            'currency': 'INR',
+            'course_name': course.name,
+            'customer_email': current_user.email,
+            'customer_name': current_user.name,
+            'key_id': RAZORPAY_KEY_ID
+        })
+    
+    except Exception as e:
+        logger.error(f'Razorpay order creation error: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to create payment order'
+        }), 500
+
+
+@app.route('/razorpay/verify-payment', methods=['POST'])
+@login_required
+def verify_razorpay_payment():
+    """Verify Razorpay payment signature"""
+    if not razorpay_client:
+        return jsonify({
+            'status': 'error',
+            'message': 'Payment gateway not configured'
+        }), 503
+    
+    try:
+        data = request.get_json()
+        order_id = data.get('order_id')
+        payment_id = data.get('payment_id')
+        signature = data.get('signature')
+        course_id = data.get('course_id')
+        
+        if not all([order_id, payment_id, signature, course_id]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing payment information'
+            }), 400
+        
+        # Verify signature
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'order_id': order_id,
+                'payment_id': payment_id,
+                'signature': signature
+            })
+        except razorpay.errors.SignatureVerificationError:
+            logger.warning(f'Signature verification failed for {payment_id}')
+            return jsonify({
+                'status': 'error',
+                'message': 'Payment verification failed. Please contact support.'
+            }), 400
+        
+        # Payment verified! Create enrollment
+        course = Course.query.get_or_404(course_id)
+        
+        enrollment = Enrollment(
+            user_id=current_user.id,
+            course_id=course_id,
+            status='completed',
+            payment_method='razorpay',
+            payment_gateway='razorpay',
+            razorpay_order_id=order_id,
+            razorpay_payment_id=payment_id,
+            razorpay_signature=signature,
+            payment_id=payment_id,
+            amount_paid=course.price,
+            verified_at=datetime.utcnow()
+        )
+        
+        db.session.add(enrollment)
+        db.session.commit()
+        
+        # Send welcome email
+        send_welcome_email(current_user.name, current_user.email, course.name, course.price)
+        
+        logger.info(f'Payment verified for {current_user.email}: {payment_id}')
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'✓ Payment successful! You are now enrolled in {course.name}',
+            'enrollment_id': enrollment.id
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Razorpay verification error: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred during verification'
+        }), 500
+
+
+@app.route('/api/webhook/razorpay', methods=['POST'])
+def razorpay_webhook():
+    """Handle Razorpay webhook notifications"""
+    if not RAZORPAY_WEBHOOK_SECRET:
+        return jsonify({'status': 'error', 'message': 'Webhook not configured'}), 401
+    
+    try:
+        # Verify webhook signature
+        webhook_signature = request.headers.get('X-Razorpay-Signature', '')
+        webhook_body = request.get_data()
+        
+        expected_signature = hmac.new(
+            RAZORPAY_WEBHOOK_SECRET.encode(),
+            webhook_body,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if webhook_signature != expected_signature:
+            logger.warning(f'Webhook signature mismatch')
+            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        event = data.get('event')
+        payload = data.get('payload', {})
+        
+        if event == 'payment.authorized' or event == 'payment.captured':
+            payment_entity = payload.get('payment', {}).get('entity', {})
+            payment_id = payment_entity.get('id')
+            order_id = payment_entity.get('order_id')
+            
+            # Find enrollment by order ID and update
+            enrollment = Enrollment.query.filter_by(razorpay_order_id=order_id).first()
+            
+            if enrollment and enrollment.status != 'completed':
+                enrollment.status = 'completed'
+                enrollment.razorpay_payment_id = payment_id
+                enrollment.verified_at = datetime.utcnow()
+                db.session.commit()
+                
+                # Send welcome email if not already sent
+                user = User.query.get(enrollment.user_id)
+                course = Course.query.get(enrollment.course_id)
+                if user and course:
+                    send_welcome_email(user.name, user.email, course.name, course.price)
+                
+                logger.info(f'Webhook: Payment {payment_id} verified and enrollment completed')
+                return jsonify({'status': 'success'}), 200
+        
+        elif event == 'payment.failed':
+            payment_entity = payload.get('payment', {}).get('entity', {})
+            order_id = payment_entity.get('order_id')
+            
+            enrollment = Enrollment.query.filter_by(razorpay_order_id=order_id).first()
+            if enrollment:
+                enrollment.status = 'failed'
+                db.session.commit()
+                logger.error(f'Webhook: Payment failed for order {order_id}')
+            
+            return jsonify({'status': 'success'}), 200
+        
+        return jsonify({'status': 'ignored', 'message': 'Event not handled'}), 200
+    
+    except Exception as e:
+        logger.error(f'Razorpay webhook error: {str(e)}')
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @app.route('/enroll/<int:course_id>', methods=['POST'])
@@ -2840,7 +3091,12 @@ def create_admin():
 def init_db():
     """Initialize the database"""
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as table_err:
+            # Ignore "table already exists" errors and continue
+            if 'already exists' not in str(table_err):
+                logger.warning(f"Database table creation warning: {table_err}")
         seed_courses()
         
         # Create default admin user if no admin exists

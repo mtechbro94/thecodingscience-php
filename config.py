@@ -35,6 +35,20 @@ class Config:
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.getenv('SENDER_EMAIL', '')
     MAIL_PASSWORD = os.getenv('SENDER_PASSWORD', '')
+    
+    # Payment Gateway Configuration
+    # Razorpay
+    RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+    RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
+    RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+    ENABLE_RAZORPAY = os.getenv('ENABLE_RAZORPAY', 'true').lower() == 'true'
+    
+    # UPI Manual Payment
+    UPI_ID_1 = os.getenv('UPI_ID_1', 'payername@bankname')
+    UPI_ID_2 = os.getenv('UPI_ID_2', 'payername@bankname')
+    UPI_ID_3 = os.getenv('UPI_ID_3', 'payername@bankname')
+    UPI_NAME = os.getenv('UPI_NAME', 'The Coding Science')
+    ENABLE_UPI_MANUAL = os.getenv('ENABLE_UPI_MANUAL', 'true').lower() == 'true'
 
 
 class DevelopmentConfig(Config):

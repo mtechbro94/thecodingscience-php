@@ -10,7 +10,8 @@ gunicorn==21.2.0
 email-validator==2.0.0
 WTForms==3.0.1
 whitenoise==6.6.0
-pytest==7.4.0
-pytest-cov==4.1.0
 markdown==3.10.1
 psycopg2-binary==2.9.9
+razorpay==1.4.1
+requests==2.31.0
+Flask-Migrate==4.0.5
