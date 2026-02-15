@@ -9,14 +9,15 @@
         <div class="bg-white rounded-xl p-6 border shadow-sm">
             <form method="POST"
                 action="{{ $course ? route('admin.courses.update', $course) : route('admin.courses.store') }}"
-                class="space-y-4">
+                enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 @if($course) @method('PUT') @endif
 
                 <div><label class="block text-sm font-medium mb-1">Course Name *</label><input type="text" name="name"
                         required value="{{ old('name', $course->name ?? '') }}"
                         class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500">@error('name')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror</div>
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
                 <div><label class="block text-sm font-medium mb-1">Summary</label><input type="text" name="summary"
                         value="{{ old('summary', $course->summary ?? '') }}"
                         class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
@@ -41,9 +42,13 @@
                     <div><label class="block text-sm font-medium mb-1">Price (₹) *</label><input type="number" name="price"
                             required value="{{ old('price', $course->price ?? '') }}"
                             class="w-full px-3 py-2 border rounded-lg text-sm" min="0" step="0.01"></div>
-                    <div><label class="block text-sm font-medium mb-1">Image Filename</label><input type="text" name="image"
-                            value="{{ old('image', $course->image ?? '') }}"
-                            class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="course.jpg"></div>
+                    <div><label class="block text-sm font-medium mb-1">Course Image</label><input type="file" name="image"
+                            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
+                            accept="image/*">
+                        @if($course && $course->image)
+                            <p class="text-xs text-gray-500 mt-1">Current: {{ basename($course->image) }}</p>
+                        @endif
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Trainer</label>

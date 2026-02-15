@@ -30,7 +30,7 @@
         @endforeach
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-6">
+    <div class="grid lg:grid-cols-3 gap-6">
         <div class="bg-white rounded-xl p-6 border shadow-sm">
             <h3 class="font-bold mb-4">Quick Actions</h3>
             <div class="grid grid-cols-2 gap-3">
@@ -46,6 +46,41 @@
                 <a href="{{ route('admin.users') }}"
                     class="p-3 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition text-center"><i
                         class="fas fa-users mr-1"></i>Manage Users</a>
+                <a href="{{ route('admin.internships') }}"
+                    class="p-3 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition text-center"><i
+                        class="fas fa-briefcase mr-1"></i>Manage Internships</a>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-6 border shadow-sm">
+            <h3 class="font-bold mb-4">System Maintenance</h3>
+            <div class="grid grid-cols-1 gap-2">
+                <a href="{{ route('admin.maintenance', 'storage-link') }}"
+                    onclick="return confirm('Ensure storage directory is writable. Proceed?')"
+                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg border text-xs">
+                    <span><i class="fas fa-link mr-2 text-blue-500"></i>Link Storage</span>
+                    <i class="fas fa-chevron-right text-gray-300"></i>
+                </a>
+                <a href="{{ route('admin.maintenance', 'cache-clear') }}"
+                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg border text-xs">
+                    <span><i class="fas fa-broom mr-2 text-yellow-500"></i>Clear App Cache</span>
+                    <i class="fas fa-chevron-right text-gray-300"></i>
+                </a>
+                <a href="{{ route('admin.maintenance', 'view-clear') }}"
+                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg border text-xs">
+                    <span><i class="fas fa-eye mr-2 text-purple-500"></i>Clear View Cache</span>
+                    <i class="fas fa-chevron-right text-gray-300"></i>
+                </a>
+                <a href="{{ route('admin.maintenance', 'config-cache') }}"
+                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg border text-xs">
+                    <span><i class="fas fa-cogs mr-2 text-green-500"></i>Optimize Config</span>
+                    <i class="fas fa-chevron-right text-gray-300"></i>
+                </a>
+                <a href="{{ route('admin.maintenance', 'migrate') }}"
+                    onclick="return confirm('This will run database migrations. Proceed?')"
+                    class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg border text-xs">
+                    <span><i class="fas fa-database mr-2 text-red-500"></i>Run Migrations</span>
+                    <i class="fas fa-chevron-right text-gray-300"></i>
+                </a>
             </div>
         </div>
         <div class="bg-white rounded-xl p-6 border shadow-sm">

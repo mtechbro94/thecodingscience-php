@@ -17,11 +17,12 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-surface-100 overflow-hidden card-hover">
                     <div class="h-48 bg-gradient-to-br from-primary-100 to-accent-100 flex items-center justify-center">
                         @if($course->image)
-                            <img src="{{ asset('images/' . $course->image) }}" alt="{{ $course->name }}"
-                                class="h-full w-full object-cover">
+                            <img src="{{ str_starts_with($course->image, 'courses/') ? Storage::url($course->image) : asset('images/' . $course->image) }}"
+                                alt="{{ $course->name }}" class="h-full w-full object-cover">
                         @else
                             <i class="fas fa-laptop-code text-5xl text-primary-400"></i>
                         @endif
+
                     </div>
                     <div class="p-6">
                         <div class="flex items-center gap-2 mb-3">

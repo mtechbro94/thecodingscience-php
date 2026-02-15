@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Internship;
 use App\Models\Enrollment;
 use App\Models\User;
 use App\Models\Blog;
@@ -11,6 +12,8 @@ use App\Models\InternshipApplication;
 use App\Models\CourseReview;
 use App\Models\NewsletterSubscriber;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class AdminController extends Controller
 {
@@ -81,10 +84,14 @@ class AdminController extends Controller
             'duration' => 'nullable|string|max:50',
             'price' => 'required|numeric|min:0',
             'level' => 'nullable|string|max:50',
-            'image' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'curriculum' => 'nullable|array',
             'trainer_id' => 'nullable|exists:users,id',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('courses', 'public');
+        }
 
         Course::create($validated);
         return redirect()->route('admin.courses')->with('success', 'Course created!');
@@ -105,10 +112,17 @@ class AdminController extends Controller
             'duration' => 'nullable|string|max:50',
             'price' => 'required|numeric|min:0',
             'level' => 'nullable|string|max:50',
-            'image' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'curriculum' => 'nullable|array',
             'trainer_id' => 'nullable|exists:users,id',
         ]);
+
+        if ($request->hasFile('image')) {
+            if ($course->image) {
+                Storage::disk('public')->delete($course->image);
+            }
+            $validated['image'] = $request->file('image')->store('courses', 'public');
+        }
 
         $course->update($validated);
         return redirect()->route('admin.courses')->with('success', 'Course updated!');
@@ -162,11 +176,15 @@ class AdminController extends Controller
             'title' => 'required|string|max:200',
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
-            'image' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'author' => 'required|string|max:100',
             'display_date' => 'nullable|string|max:50',
             'is_published' => 'boolean',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('blogs', 'public');
+        }
 
         Blog::create($validated);
         return redirect()->route('admin.blogs')->with('success', 'Blog published!');
@@ -183,11 +201,18 @@ class AdminController extends Controller
             'title' => 'required|string|max:200',
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
-            'image' => 'nullable|string|max:200',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'author' => 'required|string|max:100',
             'display_date' => 'nullable|string|max:50',
             'is_published' => 'boolean',
         ]);
+
+        if ($request->hasFile('image')) {
+            if ($blog->image) {
+                Storage::disk('public')->delete($blog->image);
+            }
+            $validated['image'] = $request->file('image')->store('blogs', 'public');
+        }
 
         $blog->update($validated);
         return redirect()->route('admin.blogs')->with('success', 'Blog updated!');
@@ -215,10 +240,10 @@ class AdminController extends Controller
 
     // ── Internship Applications ──
 
-    public function internships()
+    public function internshipApplications()
     {
         $applications = InternshipApplication::latest()->paginate(20);
-        return view('admin.internships', compact('applications'));
+        return view('admin.internships-applications', compact('applications'));
     }
 
     public function updateInternshipStatus(Request $request, InternshipApplication $application)
@@ -252,7 +277,78 @@ class AdminController extends Controller
 
     public function subscribers()
     {
-        $subscribers = NewsletterSubscriber::latest()->paginate(20);
         return view('admin.subscribers', compact('subscribers'));
     }
+
+    // ── Internships ──
+
+    public function internships()
+    {
+        return view('admin.internships', ['internships' => Internship::latest()->get()]);
+    }
+
+    public function createInternship()
+    {
+        return view('admin.internship-form', ['internship' => null]);
+    }
+
+    public function storeInternship(Request $request)
+    {
+        $validated = $request->validate([
+            'role' => 'required|string|max:200',
+            'company' => 'required|string|max:200',
+            'duration' => 'required|string|max:50',
+            'location' => 'required|string|max:100',
+            'stipend' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('internships', 'public');
+        }
+
+        Internship::create($validated);
+        return redirect()->route('admin.internships')->with('success', 'Internship created!');
+    }
+
+    public function editInternship(Internship $internship)
+    {
+        return view('admin.internship-form', compact('internship'));
+    }
+
+    public function updateInternship(Request $request, Internship $internship)
+    {
+        $validated = $request->validate([
+            'role' => 'required|string|max:200',
+            'company' => 'required|string|max:200',
+            'duration' => 'required|string|max:50',
+            'location' => 'required|string|max:100',
+            'stipend' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($internship->image) {
+                Storage::disk('public')->delete($internship->image);
+            }
+            $validated['image'] = $request->file('image')->store('internships', 'public');
+        }
+
+        $internship->update($validated);
+        return redirect()->route('admin.internships')->with('success', 'Internship updated!');
+    }
+
+    public function deleteInternship(Internship $internship)
+    {
+        if ($internship->image) {
+            Storage::disk('public')->delete($internship->image);
+        }
+        $internship->delete();
+        return redirect()->route('admin.internships')->with('success', 'Internship deleted!');
+    }
 }
+

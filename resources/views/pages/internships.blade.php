@@ -18,35 +18,35 @@
                 <div class="bg-white rounded-2xl p-8 shadow-sm border border-surface-100 card-hover">
                     <div class="flex items-center justify-between mb-4">
                         <span class="px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full">Open</span>
-                        <span class="text-primary-600 font-bold">₹{{ number_format($intern['stipend']) }}</span>
+                        <span class="text-primary-600 font-bold">₹{{ number_format($intern->stipend) }}</span>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">{{ $intern['role'] }}</h3>
+                    <h3 class="text-xl font-bold mb-2">{{ $intern->role }}</h3>
                     <p class="text-surface-500 text-sm mb-1"><i
-                            class="fas fa-building mr-2 text-primary-400"></i>{{ $intern['company'] }}</p>
+                            class="fas fa-building mr-2 text-primary-400"></i>{{ $intern->company }}</p>
                     <div class="flex items-center gap-4 text-sm text-surface-400 mb-4">
-                        <span><i class="fas fa-clock mr-1"></i>{{ $intern['duration'] }}</span>
-                        <span><i class="fas fa-map-marker-alt mr-1"></i>{{ $intern['location'] }}</span>
+                        <span><i class="fas fa-clock mr-1"></i>{{ $intern->duration }}</span>
+                        <span><i class="fas fa-map-marker-alt mr-1"></i>{{ $intern->location }}</span>
                     </div>
-                    <p class="text-surface-600 text-sm leading-relaxed mb-6">{{ $intern['description'] }}</p>
+                    <p class="text-surface-600 text-sm leading-relaxed mb-6">{{ $intern->description }}</p>
 
-                    <button onclick="document.getElementById('applyModal{{ $intern['id'] }}').classList.remove('hidden')"
+                    <button onclick="document.getElementById('applyModal{{ $intern->id }}').classList.remove('hidden')"
                         class="w-full py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition text-sm">
                         Apply Now <i class="fas fa-arrow-right ml-1"></i>
                     </button>
                 </div>
 
                 {{-- Apply Modal --}}
-                <div id="applyModal{{ $intern['id'] }}"
+                <div id="applyModal{{ $intern->id }}"
                     class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl p-8 max-w-md w-full relative">
                         <button onclick="this.closest('[id^=applyModal]').classList.add('hidden')"
                             class="absolute top-4 right-4 text-surface-400 hover:text-surface-600"><i
                                 class="fas fa-times"></i></button>
-                        <h3 class="text-xl font-bold mb-4">Apply for {{ $intern['role'] }}</h3>
+                        <h3 class="text-xl font-bold mb-4">Apply for {{ $intern->role }}</h3>
                         <form method="POST" action="{{ route('internship.apply') }}" class="space-y-4">
                             @csrf
-                            <input type="hidden" name="internship_id" value="{{ $intern['id'] }}">
-                            <input type="hidden" name="internship_role" value="{{ $intern['role'] }}">
+                            <input type="hidden" name="internship_id" value="{{ $intern->id }}">
+                            <input type="hidden" name="internship_role" value="{{ $intern->role }}">
                             <input type="text" name="name" required placeholder="Full Name"
                                 class="w-full px-4 py-2.5 border border-surface-200 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                                 value="{{ auth()->user()->name ?? '' }}">

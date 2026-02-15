@@ -8,11 +8,10 @@ use App\Models\Course;
 use App\Models\InternshipApplication;
 use App\Models\NewsletterSubscriber;
 use Illuminate\Http\Request;
+use App\Models\Internship;
 
 class PageController extends Controller
 {
-    // ── Static content arrays (ported from Flask content_data.py) ──
-
     private function services(): array
     {
         return [
@@ -20,15 +19,6 @@ class PageController extends Controller
             ['id' => 2, 'title' => 'AI & Machine Learning', 'icon' => 'fa-robot', 'description' => 'Build intelligent systems with neural networks, deep learning, NLP, and computer vision.', 'duration' => '3-4 Months', 'price' => '999-1499'],
             ['id' => 3, 'title' => 'Programming & DSA', 'icon' => 'fa-code', 'description' => 'Learn Python, Java, problem-solving, and crack coding interviews with confidence.', 'duration' => '3-4 Months', 'price' => '999-1499'],
             ['id' => 4, 'title' => 'Cloud Computing & DevOps', 'icon' => 'fa-cloud', 'description' => 'Master AWS, Docker, Kubernetes, CI/CD pipelines, and modern deployment practices.', 'duration' => '3-4 Months', 'price' => '1499'],
-        ];
-    }
-
-    private function internships(): array
-    {
-        return [
-            ['id' => 1, 'role' => 'Web Development Intern', 'company' => 'School of Technology and AI Innovations', 'duration' => '3 Months', 'location' => 'Remote', 'stipend' => 999, 'description' => 'Build real-world websites with React, Node.js & MongoDB. Gain hands-on experience with modern web technologies and industry best practices.'],
-            ['id' => 2, 'role' => 'Python Development Intern', 'company' => 'School of Technology and AI Innovations', 'duration' => '3 Months', 'location' => 'Remote', 'stipend' => 999, 'description' => 'Master backend development with Python. Build APIs, manage databases, and work on real-world projects with experienced mentors.'],
-            ['id' => 3, 'role' => 'Data Science and AI Intern', 'company' => 'School of Technology and AI Innovations', 'duration' => '3 Months', 'location' => 'Remote', 'stipend' => 999, 'description' => 'Work with real datasets and build ML models. Learn machine learning, deep learning, and solve real-world AI problems.'],
         ];
     }
 
@@ -85,7 +75,8 @@ class PageController extends Controller
 
     public function internshipsPage()
     {
-        return view('pages.internships', ['internships' => $this->internships()]);
+        $internships = Internship::where('is_active', true)->get();
+        return view('pages.internships', compact('internships'));
     }
 
     public function blog()

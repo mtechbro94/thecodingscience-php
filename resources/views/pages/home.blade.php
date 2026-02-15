@@ -11,17 +11,17 @@
         </div>
         <div class="relative max-w-7xl mx-auto px-4 py-24 sm:py-32 lg:py-40 text-center">
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight animate-fade-in">
-                Master the <span class="gradient-text">Future of Tech</span>
+                {{ \App\Models\SiteSetting::get('hero_title', 'Master the Future of Tech') }}
             </h1>
             <p class="mt-6 text-lg sm:text-xl text-surface-300 max-w-2xl mx-auto animate-fade-in"
                 style="animation-delay:.2s">
-                Industry-ready courses in Full Stack Development, AI, Data Science, Cybersecurity & more. Learn from
-                experts, build real projects.
+                {{ \App\Models\SiteSetting::get('hero_subtitle', 'Industry-ready courses in Full Stack Development, AI, Data Science, Cybersecurity & more.') }}
             </p>
             <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style="animation-delay:.4s">
-                <a href="{{ route('courses') }}"
+                <a href="{{ \App\Models\SiteSetting::get('hero_cta_link', route('courses')) }}"
                     class="px-8 py-3.5 bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-primary-500/30 transition-all transform hover:scale-105">
-                    Explore Courses <i class="fas fa-arrow-right ml-2"></i>
+                    {{ \App\Models\SiteSetting::get('hero_cta_text', 'Explore Courses') }} <i
+                        class="fas fa-arrow-right ml-2"></i>
                 </a>
                 <a href="{{ route('about') }}"
                     class="px-8 py-3.5 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/10 transition-all">
@@ -65,8 +65,8 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-surface-100 overflow-hidden card-hover">
                     <div class="h-48 bg-gradient-to-br from-primary-100 to-accent-100 flex items-center justify-center">
                         @if($course->image)
-                            <img src="{{ asset('images/' . $course->image) }}" alt="{{ $course->name }}"
-                                class="h-full w-full object-cover">
+                            <img src="{{ str_starts_with($course->image, 'courses/') ? Storage::url($course->image) : asset('images/' . $course->image) }}"
+                                alt="{{ $course->name }}" class="h-full w-full object-cover">
                         @else
                             <i class="fas fa-laptop-code text-5xl text-primary-400"></i>
                         @endif
@@ -141,8 +141,14 @@
                 @foreach($blogs as $blog)
                     <a href="{{ route('blog.detail', $blog) }}"
                         class="bg-white rounded-2xl shadow-sm border border-surface-100 overflow-hidden card-hover group">
-                        <div class="h-48 bg-gradient-to-br from-primary-50 to-accent-50 flex items-center justify-center">
-                            <i class="fas fa-newspaper text-4xl text-primary-300 group-hover:scale-110 transition-transform"></i>
+                        <div
+                            class="h-48 bg-gradient-to-br from-primary-50 to-accent-50 flex items-center justify-center overflow-hidden">
+                            @if($blog->image)
+                                <img src="{{ str_starts_with($blog->image, 'blogs/') ? Storage::url($blog->image) : asset('images/' . $blog->image) }}"
+                                    alt="{{ $blog->title }}" class="h-full w-full object-cover">
+                            @else
+                                <i class="fas fa-newspaper text-4xl text-primary-300 group-hover:scale-110 transition-transform"></i>
+                            @endif
                         </div>
                         <div class="p-6">
                             <span

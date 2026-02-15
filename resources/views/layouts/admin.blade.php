@@ -54,6 +54,9 @@
                 <a href="{{ route('admin.subscribers') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.subscribers') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
                         class="fas fa-bell w-5"></i>Subscribers</a>
+                <a href="{{ route('admin.settings') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.settings') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-cog w-5"></i>Settings</a>
             </nav>
             <div class="px-3 py-4 border-t border-gray-800">
                 <a href="{{ route('home') }}"

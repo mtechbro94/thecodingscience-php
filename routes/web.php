@@ -111,9 +111,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/contacts', [AdminController::class, 'contacts'])->name('contacts');
     Route::delete('/contacts/{message}', [AdminController::class, 'deleteContact'])->name('contacts.delete');
 
-    // Internships
-    Route::get('/internships', [AdminController::class, 'internships'])->name('internships');
-    Route::post('/internships/{application}/status', [AdminController::class, 'updateInternshipStatus'])->name('internships.status');
+    // Internships (Listings/Management)
+    Route::get('/internships', [App\Http\Controllers\AdminController::class, 'internships'])->name('internships');
+    Route::get('/internships/create', [App\Http\Controllers\AdminController::class, 'createInternship'])->name('internships.create');
+    Route::post('/internships', [App\Http\Controllers\AdminController::class, 'storeInternship'])->name('internships.store');
+    Route::get('/internships/{internship}/edit', [App\Http\Controllers\AdminController::class, 'editInternship'])->name('internships.edit');
+    Route::post('/internships/{internship}', [App\Http\Controllers\AdminController::class, 'updateInternship'])->name('internships.update');
+    Route::delete('/internships/{internship}', [App\Http\Controllers\AdminController::class, 'deleteInternship'])->name('internships.delete');
+
+    // Internship Applications
+    Route::get('/internship-applications', [App\Http\Controllers\AdminController::class, 'internshipApplications'])->name('internships.applications');
+    Route::post('/internships/{application}/status', [App\Http\Controllers\AdminController::class, 'updateInternshipStatus'])->name('internships.status');
 
     // Reviews
     Route::get('/reviews', [AdminController::class, 'reviews'])->name('reviews');
@@ -122,6 +130,41 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Subscribers
     Route::get('/subscribers', [AdminController::class, 'subscribers'])->name('subscribers');
+
+    // Site Settings
+    Route::get('/settings', [App\Http\Controllers\Admin\SiteSettingController::class, 'index'])->name('settings');
+    Route::post('/settings', [App\Http\Controllers\Admin\SiteSettingController::class, 'update'])->name('settings.update');
+
+    // Maintenance (for Hostinger/Shared hosting)
+    Route::get('/maintenance/{command}', function ($command) {
+        $allowedCommands = ['storage-link', 'cache-clear', 'view-clear', 'config-cache', 'migrate'];
+        if (!in_array($command, $allowedCommands)) {
+            return back()->with('error', 'Invalid maintenance command.');
+        }
+
+        try {
+            switch ($command) {
+                case 'storage-link':
+                    \Illuminate\Support\Facades\Artisan::call('storage:link');
+                    break;
+                case 'cache-clear':
+                    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+                    break;
+                case 'view-clear':
+                    \Illuminate\Support\Facades\Artisan::call('view:clear');
+                    break;
+                case 'config-cache':
+                    \Illuminate\Support\Facades\Artisan::call('config:cache');
+                    break;
+                case 'migrate':
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                    break;
+            }
+            return back()->with('success', "Command '{$command}' executed successfully!");
+        } catch (\Exception $e) {
+            return back()->with('error', "Error: " . $e->getMessage());
+        }
+    })->name('maintenance');
 });
 
 // ══════════════════════════════════════════

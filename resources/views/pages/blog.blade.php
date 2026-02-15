@@ -15,9 +15,16 @@
             @foreach($blogs as $blog)
                 <a href="{{ route('blog.detail', $blog) }}"
                     class="bg-white rounded-2xl shadow-sm border border-surface-100 overflow-hidden card-hover group">
-                    <div class="h-48 bg-gradient-to-br from-primary-50 to-accent-50 flex items-center justify-center">
-                        <i class="fas fa-newspaper text-4xl text-primary-300 group-hover:scale-110 transition-transform"></i>
+                    <div
+                        class="h-48 bg-gradient-to-br from-primary-50 to-accent-50 flex items-center justify-center overflow-hidden">
+                        @if($blog->image)
+                            <img src="{{ str_starts_with($blog->image, 'blogs/') ? Storage::url($blog->image) : asset('images/' . $blog->image) }}"
+                                alt="{{ $blog->title }}" class="h-full w-full object-cover">
+                        @else
+                            <i class="fas fa-newspaper text-4xl text-primary-300 group-hover:scale-110 transition-transform"></i>
+                        @endif
                     </div>
+
                     <div class="p-6">
                         <div class="flex items-center gap-2 text-xs text-surface-400 mb-2">
                             <span>{{ $blog->display_date ?? $blog->created_at->format('M d, Y') }}</span>
