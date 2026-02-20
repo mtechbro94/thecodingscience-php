@@ -35,19 +35,20 @@
             <div class="text-center lg:text-left animate-fade-in">
                 <p class="text-blue-400 font-medium mb-4">{{ $hero?->subtitle ?? 'Welcome to' }}</p>
                 <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                    {{ $hero?->title ?? 'AIwithMir' }}
-                    <span class="gradient-text block mt-2">{{ $hero?->description ?? 'TheCodingScience Blogs' }}</span>
+                    {{ $hero?->title ?? 'AI & Data Science Trainer | Educator' }}
                 </h1>
                 <p class="text-gray-300 text-lg mb-8 max-w-xl">
-                    Explore the world of AI, Machine Learning, Web Development, and Technology. 
-                    Join me on this exciting journey of learning and innovation.
+                    {{ $hero?->description ?? 'I help students, professionals, and organizations build real-world skills in Data Science, Artificial Intelligence, and modern software technologies.' }}
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                    <a href="{{ $hero?->cta_link ?? route('projects') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all transform hover:scale-105">
-                        <i class="fas fa-briefcase mr-2"></i>{{ $hero?->cta_text ?? 'View Projects' }}
+                    <a href="{{ $hero?->cta_link ?? route('services') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all transform hover:scale-105">
+                        <i class="fas fa-graduation-cap mr-2"></i>{{ $hero?->cta_text ?? 'View Programs' }}
                     </a>
-                    <a href="{{ $hero?->cta2_link ?? route('contact') }}" class="px-8 py-4 border-2 border-white/30 hover:border-white/60 text-white font-semibold rounded-lg transition-all">
-                        <i class="fas fa-envelope mr-2"></i>{{ $hero?->cta2_text ?? 'Contact Me' }}
+                    <a href="{{ $hero?->cta2_link ?? route('projects') }}" class="px-8 py-4 border-2 border-white/30 hover:border-white/60 text-white font-semibold rounded-lg transition-all">
+                        <i class="fas fa-briefcase mr-2"></i>{{ $hero?->cta2_text ?? 'Explore Projects' }}
+                    </a>
+                    <a href="{{ route('contact') }}" class="px-8 py-4 border-2 border-white/30 hover:border-white/60 text-white font-semibold rounded-lg transition-all">
+                        <i class="fas fa-envelope mr-2"></i>Work With Me
                     </a>
                 </div>
                 
@@ -117,7 +118,7 @@
                 
                 @if($about && $about->skills)
                 <div class="mb-8">
-                    <h4 class="font-semibold text-gray-900 mb-4">Tech Stack</h4>
+                    <h4 class="font-semibold text-gray-900 mb-4">Expertise & Skills</h4>
                     <div class="flex flex-wrap gap-2">
                         @foreach($about->skills as $skill)
                         <span class="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">{{ $skill }}</span>
@@ -141,8 +142,8 @@
 <section class="py-20 bg-gray-50">
     <div class="container mx-auto px-4">
         <div class="text-center mb-16">
-            <h2 class="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-2">Services</h2>
-            <h3 class="text-3xl md:text-4xl font-bold text-gray-900">What I Offer</h3>
+            <h2 class="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-2">What I Do</h2>
+            <h3 class="text-3xl md:text-4xl font-bold text-gray-900">Training & Services</h3>
         </div>
         
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

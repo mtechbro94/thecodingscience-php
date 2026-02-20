@@ -1,20 +1,34 @@
 @extends('layouts.app')
 
-@section('title', 'Services')
+@section('title', 'Services & Programs')
 
 @section('content')
 {{-- ════════ PAGE HEADER ════════ --}}
 <section class="bg-gray-900 text-white py-20">
     <div class="container mx-auto px-4">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Services</h1>
-        <p class="text-gray-400">Explore what I can do for you</p>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Services & Programs</h1>
+        <p class="text-gray-400">Structured training programs and services for your learning journey</p>
     </div>
 </section>
 
-{{-- ════════ SERVICES ════════ --}}
+{{-- Focus Areas --}}
+<section class="py-16 bg-blue-600">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-8">
+            <h2 class="text-white text-2xl font-bold">Focus Areas</h2>
+        </div>
+        <div class="flex flex-wrap justify-center gap-4">
+            @foreach(['Data Science', 'Machine Learning', 'Generative AI', 'Python', 'Real-World AI Projects', 'Tech Education'] as $area)
+            <span class="px-6 py-3 bg-white/20 text-white rounded-full text-sm font-medium">{{ $area }}</span>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- SERVICES ════════ --}}
 <section class="py-20 bg-white">
     <div class="container mx-auto px-4">
-        @if($services->count() > 0)
+        @if($services && $services->count() > 0)
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($services as $service)
             <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100">
@@ -40,11 +54,11 @@
     </div>
 </section>
 
-{{-- ════════ CTA ════════ --}}
+{{-- CTA ════════ --}}
 <section class="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
     <div class="container mx-auto px-4 text-center">
-        <h2 class="text-3xl font-bold text-white mb-4">Need Help With Something?</h2>
-        <p class="text-white/80 mb-8">Let's discuss your project and see how I can help.</p>
+        <h2 class="text-3xl font-bold text-white mb-4">Ready to Learn AI & Data Science?</h2>
+        <p class="text-white/80 mb-8">Let's discuss your learning goals and find the right program for you.</p>
         <a href="{{ route('contact') }}" class="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100 transition-all">
             <i class="fas fa-envelope mr-2"></i>Get In Touch
         </a>
