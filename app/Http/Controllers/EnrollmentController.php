@@ -43,11 +43,17 @@ class EnrollmentController extends Controller
             'utr' => 'required|string|min:8|max:50',
         ]);
 
+        $course = $enrollment->course;
+        if (!$course) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Course not found.');
+        }
+
         $enrollment->update([
             'utr' => $request->utr,
             'payment_method' => 'upi',
             'payment_gateway' => 'upi-manual',
-            'amount_paid' => $enrollment->course->price,
+            'amount_paid' => $course->price,
         ]);
 
         return redirect()->route('dashboard')

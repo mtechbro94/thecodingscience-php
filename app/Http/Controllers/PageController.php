@@ -4,85 +4,83 @@ namespace App\Http\Controllers;
 
 use App\Models\Blog;
 use App\Models\ContactMessage;
-use App\Models\Course;
-use App\Models\InternshipApplication;
+use App\Models\Project;
+use App\Models\Service;
+use App\Models\Testimonial;
+use App\Models\SocialLink;
+use App\Models\HeroSection;
+use App\Models\AboutSection;
+use App\Models\SectionSetting;
 use App\Models\NewsletterSubscriber;
 use Illuminate\Http\Request;
-use App\Models\Internship;
 
 class PageController extends Controller
 {
-    private function services(): array
-    {
-        return [
-            ['id' => 1, 'title' => 'Computer Science Engineering', 'icon' => 'fa-microchip', 'description' => 'Master programming fundamentals, data structures, algorithms, and computer architecture.', 'duration' => '2-4 Months', 'price' => '499-1499'],
-            ['id' => 2, 'title' => 'AI & Machine Learning', 'icon' => 'fa-robot', 'description' => 'Build intelligent systems with neural networks, deep learning, NLP, and computer vision.', 'duration' => '3-4 Months', 'price' => '999-1499'],
-            ['id' => 3, 'title' => 'Programming & DSA', 'icon' => 'fa-code', 'description' => 'Learn Python, Java, problem-solving, and crack coding interviews with confidence.', 'duration' => '3-4 Months', 'price' => '999-1499'],
-            ['id' => 4, 'title' => 'Cloud Computing & DevOps', 'icon' => 'fa-cloud', 'description' => 'Master AWS, Docker, Kubernetes, CI/CD pipelines, and modern deployment practices.', 'duration' => '3-4 Months', 'price' => '1499'],
-        ];
-    }
-
-    private function aboutValues(): array
-    {
-        return [
-            ['icon' => 'fa-lightbulb', 'title' => 'Innovation', 'desc' => 'Embracing the latest technology and teaching methods to stay ahead.'],
-            ['icon' => 'fa-star', 'title' => 'Excellence', 'desc' => 'Delivering the highest quality training with industry standards.'],
-            ['icon' => 'fa-hand-holding-heart', 'title' => 'Integrity', 'desc' => 'Transparency and honesty in guiding student careers.'],
-            ['icon' => 'fa-users', 'title' => 'Community', 'desc' => 'Building a supportive network of lifelong learners and mentors.'],
-        ];
-    }
-
-    // ── Page methods ──
-
     public function home()
     {
-        $courses = Course::latest()->take(6)->get();
+        $hero = HeroSection::where('is_active', true)->first();
+        $about = AboutSection::where('is_active', true)->first();
+        $services = Service::where('is_active', true)->orderBy('order')->get();
+        $projects = Project::where('is_active', true)->orderBy('order')->get();
+        $featuredProjects = Project::where('is_active', true)->where('is_featured', true)->orderBy('order')->take(6)->get();
+        $testimonials = Testimonial::where('is_active', true)->latest()->take(5)->get();
         $blogs = Blog::published()->latest()->take(3)->get();
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
 
-        return view('pages.home', compact('courses', 'blogs'));
+        return view('frontend.home', compact(
+            'hero', 'about', 'services', 'projects', 'featuredProjects',
+            'testimonials', 'blogs', 'socialLinks'
+        ));
     }
 
     public function about()
     {
-        return view('pages.about', ['values' => $this->aboutValues()]);
+        $about = AboutSection::where('is_active', true)->first();
+        $testimonials = Testimonial::where('is_active', true)->latest()->take(5)->get();
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.about', compact('about', 'testimonials', 'socialLinks'));
     }
 
-    public function courses()
+    public function services()
     {
-        $courses = Course::all();
-        return view('pages.courses', compact('courses'));
+        $services = Service::where('is_active', true)->orderBy('order')->get();
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.services', compact('services', 'socialLinks'));
     }
 
-    public function courseDetail(Course $course)
+    public function serviceDetail(Service $service)
     {
-        $reviews = $course->approvedReviews()->with('user')->latest()->get();
-        $avgRating = $course->averageRating();
-        $isEnrolled = false;
-        if (auth()->check()) {
-            $isEnrolled = $course->enrollments()
-                ->where('user_id', auth()->id())
-                ->where('status', 'completed')
-                ->exists();
-        }
-
-        return view('pages.course-detail', compact('course', 'reviews', 'avgRating', 'isEnrolled'));
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+        return view('frontend.service-detail', compact('service', 'socialLinks'));
     }
 
-    public function servicesPage()
+    public function projects()
     {
-        return view('pages.services', ['services' => $this->services()]);
+        $projects = Project::where('is_active', true)->orderBy('order')->get();
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.projects', compact('projects', 'socialLinks'));
     }
 
-    public function internshipsPage()
+    public function projectDetail(Project $project)
     {
-        $internships = Internship::where('is_active', true)->get();
-        return view('pages.internships', compact('internships'));
+        $relatedProjects = Project::where('is_active', true)
+            ->where('id', '!=', $project->id)
+            ->take(3)
+            ->get();
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.project-detail', compact('project', 'relatedProjects', 'socialLinks'));
     }
 
     public function blog()
     {
         $blogs = Blog::published()->latest()->paginate(9);
-        return view('pages.blog', compact('blogs'));
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.blog', compact('blogs', 'socialLinks'));
     }
 
     public function blogDetail(Blog $blog)
@@ -91,12 +89,17 @@ class PageController extends Controller
             abort(404);
         }
         $recent = Blog::published()->where('id', '!=', $blog->id)->latest()->take(3)->get();
-        return view('pages.blog-detail', compact('blog', 'recent'));
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.blog-detail', compact('blog', 'recent', 'socialLinks'));
     }
 
     public function contact()
     {
-        return view('pages.contact');
+        $about = AboutSection::where('is_active', true)->first();
+        $socialLinks = SocialLink::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.contact', compact('about', 'socialLinks'));
     }
 
     public function submitContact(Request $request)
@@ -112,26 +115,6 @@ class PageController extends Controller
         ContactMessage::create($validated);
 
         return back()->with('success', 'Thank you! Your message has been sent successfully.');
-    }
-
-    public function applyInternship(Request $request)
-    {
-        $validated = $request->validate([
-            'internship_id' => 'required|integer',
-            'internship_role' => 'required|string|max:200',
-            'name' => 'required|string|max:120',
-            'email' => 'required|email|max:120',
-            'phone' => 'required|string|max:20',
-            'cover_letter' => 'nullable|string|max:5000',
-        ]);
-
-        if (auth()->check()) {
-            $validated['user_id'] = auth()->id();
-        }
-
-        InternshipApplication::create($validated);
-
-        return back()->with('success', 'Application submitted successfully!');
     }
 
     public function subscribeNewsletter(Request $request)

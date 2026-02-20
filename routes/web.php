@@ -5,8 +5,6 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
@@ -17,16 +15,15 @@ use Illuminate\Support\Facades\Route;
 // ══════════════════════════════════════════
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
-Route::get('/courses', [PageController::class, 'courses'])->name('courses');
-Route::get('/course/{course}', [PageController::class, 'courseDetail'])->name('course.detail');
-Route::get('/services', [PageController::class, 'servicesPage'])->name('services');
-Route::get('/internships', [PageController::class, 'internshipsPage'])->name('internships');
+Route::get('/services', [PageController::class, 'services'])->name('services');
+Route::get('/services/{service}', [PageController::class, 'serviceDetail'])->name('service.detail');
+Route::get('/projects', [PageController::class, 'projects'])->name('projects');
+Route::get('/projects/{project}', [PageController::class, 'projectDetail'])->name('project.detail');
 Route::get('/blog', [PageController::class, 'blog'])->name('blog');
 Route::get('/blog/{blog}', [PageController::class, 'blogDetail'])->name('blog.detail');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 
 Route::post('/contact', [PageController::class, 'submitContact'])->name('contact.submit');
-Route::post('/internship/apply', [PageController::class, 'applyInternship'])->name('internship.apply');
 Route::post('/newsletter/subscribe', [PageController::class, 'subscribeNewsletter'])->name('newsletter.subscribe');
 
 // ══════════════════════════════════════════
@@ -49,32 +46,6 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout')->middleware('auth');
 
 // ══════════════════════════════════════════
-// STUDENT (authenticated)
-// ══════════════════════════════════════════
-Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'studentDashboard'])->name('dashboard');
-
-    // Enrollment & Payment
-    Route::get('/enroll/{course}', [EnrollmentController::class, 'enroll'])->name('enroll');
-    Route::post('/enrollment/{enrollment}/utr', [EnrollmentController::class, 'submitUtr'])->name('enrollment.utr');
-
-    // Razorpay (AJAX)
-    Route::post('/payment/razorpay/create', [PaymentController::class, 'createRazorpayOrder'])->name('payment.razorpay.create');
-    Route::post('/payment/razorpay/verify', [PaymentController::class, 'verifyRazorpayPayment'])->name('payment.razorpay.verify');
-
-    // Reviews
-    Route::post('/course/{course}/review', [ReviewController::class, 'store'])->name('review.store');
-    Route::delete('/review/{review}', [ReviewController::class, 'destroy'])->name('review.destroy');
-});
-
-// ══════════════════════════════════════════
-// TRAINER
-// ══════════════════════════════════════════
-Route::middleware(['auth', 'role:trainer'])->prefix('trainer')->name('trainer.')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'trainerDashboard'])->name('dashboard');
-});
-
-// ══════════════════════════════════════════
 // ADMIN
 // ══════════════════════════════════════════
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -82,22 +53,50 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Users
     Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::post('/users/{user}/approve', [AdminController::class, 'approveTrainer'])->name('users.approve');
     Route::post('/users/{user}/role', [AdminController::class, 'changeRole'])->name('users.role');
     Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
 
-    // Courses
-    Route::get('/courses', [AdminController::class, 'courses'])->name('courses');
-    Route::get('/courses/create', [AdminController::class, 'createCourse'])->name('courses.create');
-    Route::post('/courses', [AdminController::class, 'storeCourse'])->name('courses.store');
-    Route::get('/courses/{course}/edit', [AdminController::class, 'editCourse'])->name('courses.edit');
-    Route::put('/courses/{course}', [AdminController::class, 'updateCourse'])->name('courses.update');
-    Route::delete('/courses/{course}', [AdminController::class, 'deleteCourse'])->name('courses.delete');
+    // Portfolio - Projects
+    Route::get('/projects', [AdminController::class, 'projects'])->name('projects');
+    Route::get('/projects/create', [AdminController::class, 'createProject'])->name('projects.create');
+    Route::post('/projects', [AdminController::class, 'storeProject'])->name('projects.store');
+    Route::get('/projects/{project}/edit', [AdminController::class, 'editProject'])->name('projects.edit');
+    Route::put('/projects/{project}', [AdminController::class, 'updateProject'])->name('projects.update');
+    Route::delete('/projects/{project}', [AdminController::class, 'deleteProject'])->name('projects.delete');
 
-    // Enrollments
-    Route::get('/enrollments', [AdminController::class, 'enrollments'])->name('enrollments');
-    Route::post('/enrollments/{enrollment}/verify', [AdminController::class, 'verifyEnrollment'])->name('enrollments.verify');
-    Route::delete('/enrollments/{enrollment}', [AdminController::class, 'deleteEnrollment'])->name('enrollments.delete');
+    // Portfolio - Services
+    Route::get('/services', [AdminController::class, 'services'])->name('services');
+    Route::get('/services/create', [AdminController::class, 'createService'])->name('services.create');
+    Route::post('/services', [AdminController::class, 'storeService'])->name('services.store');
+    Route::get('/services/{service}/edit', [AdminController::class, 'editService'])->name('services.edit');
+    Route::put('/services/{service}', [AdminController::class, 'updateService'])->name('services.update');
+    Route::delete('/services/{service}', [AdminController::class, 'deleteService'])->name('services.delete');
+
+    // Portfolio - Testimonials
+    Route::get('/testimonials', [AdminController::class, 'testimonials'])->name('testimonials');
+    Route::get('/testimonials/create', [AdminController::class, 'createTestimonial'])->name('testimonials.create');
+    Route::post('/testimonials', [AdminController::class, 'storeTestimonial'])->name('testimonials.store');
+    Route::get('/testimonials/{testimonial}/edit', [AdminController::class, 'editTestimonial'])->name('testimonials.edit');
+    Route::put('/testimonials/{testimonial}', [AdminController::class, 'updateTestimonial'])->name('testimonials.update');
+    Route::delete('/testimonials/{testimonial}', [AdminController::class, 'deleteTestimonial'])->name('testimonials.delete');
+
+    // Portfolio - Social Links
+    Route::get('/social-links', [AdminController::class, 'socialLinks'])->name('social-links');
+    Route::post('/social-links', [AdminController::class, 'storeSocialLink'])->name('social-links.store');
+    Route::put('/social-links/{socialLink}', [AdminController::class, 'updateSocialLink'])->name('social-links.update');
+    Route::delete('/social-links/{socialLink}', [AdminController::class, 'deleteSocialLink'])->name('social-links.delete');
+
+    // Portfolio - Hero Section
+    Route::get('/hero', [AdminController::class, 'heroSection'])->name('hero');
+    Route::put('/hero', [AdminController::class, 'updateHeroSection'])->name('hero.update');
+
+    // Portfolio - About Section
+    Route::get('/about', [AdminController::class, 'aboutSection'])->name('about');
+    Route::put('/about', [AdminController::class, 'updateAboutSection'])->name('about.update');
+
+    // Portfolio - Section Settings
+    Route::get('/sections', [AdminController::class, 'sectionSettings'])->name('sections');
+    Route::put('/sections', [AdminController::class, 'updateSectionSettings'])->name('sections.update');
 
     // Blogs
     Route::get('/blogs', [AdminController::class, 'blogs'])->name('blogs');
@@ -111,18 +110,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/contacts', [AdminController::class, 'contacts'])->name('contacts');
     Route::delete('/contacts/{message}', [AdminController::class, 'deleteContact'])->name('contacts.delete');
 
-    // Internships (Listings/Management)
-    Route::get('/internships', [App\Http\Controllers\AdminController::class, 'internships'])->name('internships');
-    Route::get('/internships/create', [App\Http\Controllers\AdminController::class, 'createInternship'])->name('internships.create');
-    Route::post('/internships', [App\Http\Controllers\AdminController::class, 'storeInternship'])->name('internships.store');
-    Route::get('/internships/{internship}/edit', [App\Http\Controllers\AdminController::class, 'editInternship'])->name('internships.edit');
-    Route::post('/internships/{internship}', [App\Http\Controllers\AdminController::class, 'updateInternship'])->name('internships.update');
-    Route::delete('/internships/{internship}', [App\Http\Controllers\AdminController::class, 'deleteInternship'])->name('internships.delete');
-
-    // Internship Applications
-    Route::get('/internship-applications', [App\Http\Controllers\AdminController::class, 'internshipApplications'])->name('internships.applications');
-    Route::post('/internships/{application}/status', [App\Http\Controllers\AdminController::class, 'updateInternshipStatus'])->name('internships.status');
-
     // Reviews
     Route::get('/reviews', [AdminController::class, 'reviews'])->name('reviews');
     Route::post('/reviews/{review}/approve', [AdminController::class, 'approveReview'])->name('reviews.approve');
@@ -135,7 +122,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/settings', [App\Http\Controllers\Admin\SiteSettingController::class, 'index'])->name('settings');
     Route::post('/settings', [App\Http\Controllers\Admin\SiteSettingController::class, 'update'])->name('settings.update');
 
-    // Maintenance (for Hostinger/Shared hosting)
+    // Maintenance
     Route::get('/maintenance/{command}', function ($command) {
         $allowedCommands = ['storage-link', 'cache-clear', 'view-clear', 'config-cache', 'migrate'];
         if (!in_array($command, $allowedCommands)) {
@@ -168,6 +155,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 });
 
 // ══════════════════════════════════════════
-// WEBHOOKS (no auth)
+// WEBHOOKS
 // ══════════════════════════════════════════
 Route::post('/webhook/payment', [PaymentController::class, 'paymentWebhook'])->name('webhook.payment');

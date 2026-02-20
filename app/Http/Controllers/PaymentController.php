@@ -67,14 +67,23 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Payment verification failed'], 400);
         }
 
-        $enrollment = Enrollment::where('razorpay_order_id', $request->razorpay_order_id)->firstOrFail();
+        $enrollment = Enrollment::where('razorpay_order_id', $request->razorpay_order_id)->first();
+
+        if (!$enrollment) {
+            return response()->json(['error' => 'Enrollment not found'], 404);
+        }
+
+        $course = $enrollment->course;
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
 
         $enrollment->update([
             'status' => 'completed',
             'payment_gateway' => 'razorpay',
             'razorpay_payment_id' => $request->razorpay_payment_id,
             'razorpay_signature' => $request->razorpay_signature,
-            'amount_paid' => $enrollment->course->price,
+            'amount_paid' => $course->price,
             'verified_at' => now(),
         ]);
 
@@ -86,6 +95,19 @@ class PaymentController extends Controller
      */
     public function paymentWebhook(Request $request)
     {
+        $webhookSecret = config('services.razorpay.webhook_secret');
+        
+        if ($webhookSecret && $request->hasHeader('X-Razorpay-Signature')) {
+            $signature = $request->header('X-Razorpay-Signature');
+            $payload = $request->getContent();
+            $expected = hash_hmac('sha256', $payload, $webhookSecret);
+            
+            if (!hash_equals($expected, $signature)) {
+                Log::warning('Invalid webhook signature attempt');
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+        }
+
         $request->validate([
             'utr' => 'required|string',
             'amount' => 'required|numeric',

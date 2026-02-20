@@ -54,6 +54,29 @@
                 <a href="{{ route('admin.subscribers') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.subscribers') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
                         class="fas fa-bell w-5"></i>Subscribers</a>
+                
+                <div class="pt-4 mt-4 border-t border-gray-800">
+                    <p class="px-3 text-xs text-gray-500 uppercase">Portfolio</p>
+                </div>
+                <a href="{{ route('admin.projects') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.projects') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-project-diagram w-5"></i>Projects</a>
+                <a href="{{ route('admin.services') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.services') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-tools w-5"></i>Services</a>
+                <a href="{{ route('admin.testimonials') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.testimonials') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-quote-left w-5"></i>Testimonials</a>
+                <a href="{{ route('admin.social-links') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.social-links') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-link w-5"></i>Social Links</a>
+                <a href="{{ route('admin.hero') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.hero') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-home w-5"></i>Hero Section</a>
+                <a href="{{ route('admin.about') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.about') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
+                        class="fas fa-user w-5"></i>About Section</a>
+                
                 <a href="{{ route('admin.settings') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('admin.settings') ? 'bg-primary-600 text-white' : 'hover:bg-gray-800' }}"><i
                         class="fas fa-cog w-5"></i>Settings</a>

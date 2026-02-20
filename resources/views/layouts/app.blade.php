@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
-        content="@yield('meta_description', 'The Coding Science - School of Technology and AI Innovations. Learn Full Stack Development, Data Science, AI, Ethical Hacking and more.')">
-    <title>@yield('title', 'The Coding Science') | School of Technology & AI</title>
+        content="@yield('meta_description', 'AIwithMir - TheCodingScience Blogs. Portfolio and Blog of Mir. Learn AI, Machine Learning, Web Development and more.')">
+    <title>@yield('title', 'AIwithMir') | TheCodingScience Blogs</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
